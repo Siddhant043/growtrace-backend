@@ -319,7 +319,7 @@ export const forgotPassword = async (
     const resetLink = `${env.CLIENT_APP_URL}/reset-password?secret=${encodeURIComponent(resetSecret)}`;
 
     try {
-      const emailObject = {
+      const resetPasswordEmailObject = {
         from: env.SMTP_FROM,
         to: user.email,
         subject: "GrowTrace password reset",
@@ -335,7 +335,7 @@ export const forgotPassword = async (
           </div>
         `,
       };
-      await sendPasswordResetEmail(emailObject);
+      await sendPasswordResetEmail(resetPasswordEmailObject);
     } catch (emailError) {
       console.error("Failed to send password reset email", emailError);
     }

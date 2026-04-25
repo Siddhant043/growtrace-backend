@@ -4,7 +4,10 @@ import { randomBytes } from "node:crypto";
 import { Types } from "mongoose";
 
 import { env } from "../../config/env";
-import { sendPasswordResetEmail } from "../../infrastructure/email";
+import {
+  sendPasswordResetEmail,
+  sendPasswordUpdatedEmail,
+} from "../../infrastructure/email";
 import { connectToRedis } from "../../infrastructure/redis";
 import { UserModel, type AuthType, type UserType } from "../models/user.model";
 import type {
@@ -78,13 +81,15 @@ export const signup = async (
   let createdOrLinkedUser: AuthUserRecord | null = null;
 
   if (request.body.authType === "google") {
-    const verifiedGoogleIdentity = await verifyGoogleIdToken(request.body.idToken).catch(
-      () => {
-        throw createApiError("Invalid Google authentication token", 401);
-      },
-    );
+    const verifiedGoogleIdentity = await verifyGoogleIdToken(
+      request.body.idToken,
+    ).catch(() => {
+      throw createApiError("Invalid Google authentication token", 401);
+    });
 
-    const existingUser = await UserModel.findOne({ email: verifiedGoogleIdentity.email });
+    const existingUser = await UserModel.findOne({
+      email: verifiedGoogleIdentity.email,
+    });
 
     if (existingUser) {
       if (existingUser.isDeleted) {
@@ -95,10 +100,16 @@ export const signup = async (
         existingUser.googleSub &&
         existingUser.googleSub !== verifiedGoogleIdentity.googleSub
       ) {
-        throw createApiError("Google account is already linked to another identity", 409);
+        throw createApiError(
+          "Google account is already linked to another identity",
+          409,
+        );
       }
 
-      existingUser.authMethods = mergeAuthMethods(existingUser.authMethods, "google");
+      existingUser.authMethods = mergeAuthMethods(
+        existingUser.authMethods,
+        "google",
+      );
       existingUser.googleSub = verifiedGoogleIdentity.googleSub;
       existingUser.emailVerified =
         existingUser.emailVerified || verifiedGoogleIdentity.emailVerified;
@@ -132,7 +143,9 @@ export const signup = async (
         throw createApiError("User account is deleted", 403);
       }
 
-      const existingMethods = existingUser.authMethods ?? [existingUser.authType ?? "email"];
+      const existingMethods = existingUser.authMethods ?? [
+        existingUser.authType ?? "email",
+      ];
       if (existingMethods.includes("email")) {
         throw createApiError("Email is already registered", 409);
       }
@@ -181,11 +194,11 @@ export const login = async (
   let authenticatedUser: AuthUserRecord | null = null;
 
   if (request.body.authType === "google") {
-    const verifiedGoogleIdentity = await verifyGoogleIdToken(request.body.idToken).catch(
-      () => {
-        throw createApiError("Invalid Google authentication token", 401);
-      },
-    );
+    const verifiedGoogleIdentity = await verifyGoogleIdToken(
+      request.body.idToken,
+    ).catch(() => {
+      throw createApiError("Invalid Google authentication token", 401);
+    });
 
     const existingUser = await UserModel.findOne({
       email: verifiedGoogleIdentity.email,
@@ -200,10 +213,16 @@ export const login = async (
         existingUser.googleSub &&
         existingUser.googleSub !== verifiedGoogleIdentity.googleSub
       ) {
-        throw createApiError("Google account is already linked to another identity", 409);
+        throw createApiError(
+          "Google account is already linked to another identity",
+          409,
+        );
       }
 
-      existingUser.authMethods = mergeAuthMethods(existingUser.authMethods, "google");
+      existingUser.authMethods = mergeAuthMethods(
+        existingUser.authMethods,
+        "google",
+      );
       existingUser.googleSub = verifiedGoogleIdentity.googleSub;
       existingUser.emailVerified =
         existingUser.emailVerified || verifiedGoogleIdentity.emailVerified;
@@ -241,7 +260,10 @@ export const login = async (
 
     const availableAuthMethods = user.authMethods ?? [user.authType ?? "email"];
     if (!availableAuthMethods.includes("email")) {
-      throw createApiError("This account is linked to Google sign-in only", 401);
+      throw createApiError(
+        "This account is linked to Google sign-in only",
+        401,
+      );
     }
 
     if (!user.password) {
@@ -297,7 +319,23 @@ export const forgotPassword = async (
     const resetLink = `${env.CLIENT_APP_URL}/reset-password?secret=${encodeURIComponent(resetSecret)}`;
 
     try {
-      await sendPasswordResetEmail(user.email, resetLink);
+      const emailObject = {
+        from: env.SMTP_FROM,
+        to: user.email,
+        subject: "GrowTrace password reset",
+        text: `Use this link to reset your password. This link is valid for 10 minutes: ${resetLink}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+            <h2 style="margin: 0 0 12px;">Reset your GrowTrace password</h2>
+            <p style="margin: 0 0 12px;">You requested a password reset.</p>
+            <p style="margin: 0 0 12px;">
+              <a href="${resetLink}" style="color: #4f46e5; text-decoration: none;">Reset Password</a>
+            </p>
+            <p style="margin: 0;">This link expires in 10 minutes.</p>
+          </div>
+        `,
+      };
+      await sendPasswordResetEmail(emailObject);
     } catch (emailError) {
       console.error("Failed to send password reset email", emailError);
     }
@@ -310,7 +348,12 @@ export const forgotPassword = async (
 };
 
 export const resetPassword = async (
-  request: Request<unknown, unknown, ResetPasswordRequestBody, ResetPasswordRequestQuery>,
+  request: Request<
+    unknown,
+    unknown,
+    ResetPasswordRequestBody,
+    ResetPasswordRequestQuery
+  >,
   response: Response,
 ): Promise<void> => {
   const { secret } = request.query;
@@ -339,7 +382,9 @@ export const resetPassword = async (
     throw createApiError("Reset secret is invalid or expired", 401);
   }
 
-  const user = await UserModel.findById(parsedSecretRecord.userId).select("+password");
+  const user = await UserModel.findById(parsedSecretRecord.userId).select(
+    "+password",
+  );
   if (!user || user.isDeleted) {
     await redisClient.del(resetSecretRedisKey);
     throw createApiError("Reset secret is invalid or expired", 401);
@@ -355,6 +400,26 @@ export const resetPassword = async (
   user.authMethods = mergeAuthMethods(availableAuthMethods, "email");
   await user.save();
   await redisClient.del(resetSecretRedisKey);
+
+  try {
+    const passwordUpdatedEmailObject = {
+      from: env.SMTP_FROM,
+      to: user.email,
+      subject: "GrowTrace password updated",
+      text: "Your GrowTrace password has been updated successfully. If this was not you, please reset your password immediately.",
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+          <h2 style="margin: 0 0 12px;">Your password was updated</h2>
+          <p style="margin: 0 0 12px;">Your GrowTrace password has been changed successfully.</p>
+          <p style="margin: 0;">If you did not make this change, please reset your password immediately and review your account security.</p>
+        </div>
+      `,
+    };
+
+    await sendPasswordUpdatedEmail(passwordUpdatedEmailObject);
+  } catch (emailError) {
+    console.error("Failed to send password updated email", emailError);
+  }
 
   response.status(200).json({
     success: true,

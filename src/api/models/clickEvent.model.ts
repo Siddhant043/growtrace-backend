@@ -62,6 +62,7 @@ const clickEventSchema = new Schema(
 
 clickEventSchema.index({ linkId: 1, timestamp: -1 });
 clickEventSchema.index({ userId: 1 });
+clickEventSchema.index({ userId: 1, timestamp: -1 });
 clickEventSchema.index({ platform: 1 });
 
 export type ClickEventDocument = InferSchemaType<typeof clickEventSchema> & {

@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import analyticsRouter from "./analytics";
 import authRouter from "./auth";
+import dashboardRouter from "./dashboard";
 import linkRouter from "./link";
 import userRouter from "./users";
 
@@ -11,5 +12,6 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/users", userRouter);
 apiRouter.use("/links", linkRouter);
 apiRouter.use("/analytics", analyticsRouter);
+apiRouter.use("/dashboard", dashboardRouter);
 
 export default apiRouter;

@@ -6,7 +6,8 @@ This document provides a complete, runnable Postman flow for testing:
 - Google auth (`signup` / `login`)
 - Link creation
 - Redirect + click tracking
-- Analytics APIs
+- Dashboard API
+- Analytics APIs (enhanced)
 - Common negative/edge cases
 
 ---
@@ -45,8 +46,9 @@ Create folders in this order:
 2. `Auth - Google`
 3. `Links`
 4. `Redirect Tracking`
-5. `Analytics`
-6. `Negative Tests`
+5. `Dashboard`
+6. `Analytics`
+7. `Negative Tests`
 
 ---
 
@@ -264,13 +266,80 @@ pm.environment.set("linkId", data.id);
 
 ---
 
-## 8) Analytics Flows
+## 8) Dashboard Flow
+
+Dashboard endpoint requires:
+
+- Header: `Authorization: Bearer {{authToken}}`
+
+### 8.1 Dashboard Summary
+
+**Request**
+
+- Method: `GET`
+- URL: `{{baseUrl}}/api/dashboard`
+
+**Expected**
+
+- Status: `200 OK`
+- Response contains:
+  - `data.totalClicks`
+  - `data.activeLinks`
+  - `data.topPlatform.platform`
+  - `data.topPlatform.clicks`
+  - `data.topPlatform.percentage`
+  - `data.topLink.shortCode`
+  - `data.topLink.clicks`
+  - `data.platformSnapshot` (top 3)
+  - `data.topLinksPreview` (top 3-5)
+  - `data.recentActivity`
+  - `data.quickInsight`
+
+Example:
+
+```json
+{
+  "success": true,
+  "data": {
+    "totalClicks": 1240,
+    "activeLinks": 12,
+    "topPlatform": { "platform": "instagram", "clicks": 860, "percentage": 69 },
+    "topLink": { "shortCode": "abc123", "clicks": 210 },
+    "platformSnapshot": [
+      { "platform": "instagram", "clicks": 860, "percentage": 69 },
+      { "platform": "twitter", "clicks": 240, "percentage": 19 },
+      { "platform": "youtube", "clicks": 140, "percentage": 12 }
+    ],
+    "topLinksPreview": [
+      { "shortCode": "abc123", "clicks": 210 },
+      { "shortCode": "xyz789", "clicks": 180 }
+    ],
+    "recentActivity": [
+      {
+        "type": "click",
+        "message": "abc123 got 1 click",
+        "timestamp": "2026-04-25T10:00:00.000Z"
+      },
+      {
+        "type": "link_created",
+        "message": "New link created: xyz789",
+        "timestamp": "2026-04-25T09:30:00.000Z"
+      }
+    ],
+    "quickInsight": "Instagram is driving most of your traffic this week"
+  }
+}
+```
+
+---
+
+## 9) Analytics Flows (Enhanced)
 
 All analytics endpoints require:
 
 - Header: `Authorization: Bearer {{authToken}}`
 
-### 8.1 Overview
+### 9.1 Overview
 
 **Request**
 
@@ -282,12 +351,14 @@ All analytics endpoints require:
 - Status: `200 OK`
 - Response contains:
   - `data.totalClicks`
+  - `data.activeLinks`
+  - `data.avgClicksPerLink`
   - `data.topPlatform`
   - `data.topLink`
 
 ---
 
-### 8.2 Platform Stats
+### 9.2 Platform Stats
 
 **Request**
 
@@ -303,14 +374,15 @@ All analytics endpoints require:
 [
   {
     "platform": "instagram",
-    "clicks": 4
+    "clicks": 4,
+    "percentage": 80
   }
 ]
 ```
 
 ---
 
-### 8.3 Top Links
+### 9.3 Top Links
 
 **Request**
 
@@ -328,14 +400,62 @@ All analytics endpoints require:
     "linkId": "680b5c...",
     "shortCode": "aB3kL9q",
     "originalUrl": "https://example.com/landing-page",
-    "clicks": 7
+    "platform": "instagram",
+    "clicks": 7,
+    "percentage": 58
   }
 ]
 ```
 
 ---
 
-## 9) Negative / Edge Case Tests
+### 9.4 Trends (7d / 30d)
+
+**Request (7d)**
+
+- Method: `GET`
+- URL: `{{baseUrl}}/api/analytics/trends?range=7d`
+
+**Request (30d)**
+
+- Method: `GET`
+- URL: `{{baseUrl}}/api/analytics/trends?range=30d`
+
+**Expected**
+
+- Status: `200 OK`
+- Sorted ascending by date:
+
+```json
+[
+  { "date": "2026-04-20", "clicks": 120 },
+  { "date": "2026-04-21", "clicks": 180 }
+]
+```
+
+---
+
+### 9.5 Compare (optional)
+
+**Request**
+
+- Method: `GET`
+- URL: `{{baseUrl}}/api/analytics/compare?dimension=platform`
+
+**Expected**
+
+- Status: `200 OK`
+
+```json
+{
+  "instagram": { "clicks": 860 },
+  "twitter": { "clicks": 240 }
+}
+```
+
+---
+
+## 10) Negative / Edge Case Tests
 
 ### 9.1 Missing auth token on protected route
 
@@ -367,20 +487,21 @@ All analytics endpoints require:
 
 ---
 
-## 10) Suggested End-to-End Test Order
+## 11) Suggested End-to-End Test Order
 
 1. Email signup  
 2. Email login (store token)  
 3. Create link  
 4. Hit redirect URL 3-5 times  
-5. Verify analytics: overview/platform/links  
-6. Google signup/login (same and different emails)  
-7. Re-run analytics  
-8. Run negative tests
+5. Verify dashboard summary (`/api/dashboard`)  
+6. Verify analytics: overview/platform/links/trends/compare  
+7. Google signup/login (same and different emails)  
+8. Re-run dashboard + analytics  
+9. Run negative tests
 
 ---
 
-## 11) Handy Curl Commands (Optional)
+## 12) Handy Curl Commands (Optional)
 
 ### Email Login
 
@@ -414,9 +535,23 @@ curl -X POST "{{baseUrl}}/api/links" \
 curl -i "{{baseUrl}}/r/{{shortCode}}"
 ```
 
+### Dashboard
+
+```bash
+curl -X GET "{{baseUrl}}/api/dashboard" \
+  -H "Authorization: Bearer {{authToken}}"
+```
+
+### Analytics Trends
+
+```bash
+curl -X GET "{{baseUrl}}/api/analytics/trends?range=7d" \
+  -H "Authorization: Bearer {{authToken}}"
+```
+
 ---
 
-## 12) Troubleshooting Tips
+## 13) Troubleshooting Tips
 
 - `404` on `/api/*` from `localhost:3000`: ensure client API base URL points to backend (`localhost:8000`) or use proxy.
 - `401` for protected routes: verify `Authorization: Bearer <token>` format.

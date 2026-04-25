@@ -19,6 +19,16 @@ const runtimeEnvironmentSchema = z.object({
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_EXPIRES_IN: z.string().min(1, "JWT_EXPIRES_IN is required"),
   GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+  CLIENT_APP_URL: z.string().url("CLIENT_APP_URL must be a valid URL").default("http://localhost:3000"),
+  SMTP_HOST: z.string().min(1, "SMTP_HOST is required").default("localhost"),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(1025),
+  SMTP_USER: z.string().default(""),
+  SMTP_PASS: z.string().default(""),
+  SMTP_FROM: z.string().email("SMTP_FROM must be a valid email address").default("no-reply@growtrace.local"),
+  SMTP_SECURE: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 const parsedRuntimeEnvironment = runtimeEnvironmentSchema.safeParse(

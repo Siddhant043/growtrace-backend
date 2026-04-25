@@ -1,9 +1,17 @@
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
+import { randomBytes } from "node:crypto";
+import { Types } from "mongoose";
 
+import { env } from "../../config/env";
+import { sendPasswordResetEmail } from "../../infrastructure/email";
+import { connectToRedis } from "../../infrastructure/redis";
 import { UserModel, type AuthType, type UserType } from "../models/user.model";
 import type {
+  ForgotPasswordRequestBody,
   LoginRequestBody,
+  ResetPasswordRequestBody,
+  ResetPasswordRequestQuery,
   SignupRequestBody,
 } from "../validators/auth.validator";
 import { signAuthToken } from "../utils/jwt";
@@ -56,6 +64,12 @@ const mergeAuthMethods = (
   mergedMethods.add(authMethodToAdd);
   return [...mergedMethods];
 };
+
+const RESET_SECRET_TTL_SECONDS = 10 * 60;
+const PASSWORD_RESET_KEY_PREFIX = "pwd-reset";
+
+const getPasswordResetRedisKey = (resetSecret: string): string =>
+  `${PASSWORD_RESET_KEY_PREFIX}:${resetSecret}`;
 
 export const signup = async (
   request: Request<unknown, unknown, SignupRequestBody>,
@@ -256,5 +270,94 @@ export const login = async (
     success: true,
     token,
     user: mapUserForAuthResponse(authenticatedUser),
+  });
+};
+
+export const forgotPassword = async (
+  request: Request<unknown, unknown, ForgotPasswordRequestBody>,
+  response: Response,
+): Promise<void> => {
+  const { email } = request.body;
+  const user = await UserModel.findOne({ email });
+
+  if (user && !user.isDeleted) {
+    const resetSecret = randomBytes(32).toString("hex");
+    const redisClient = await connectToRedis();
+    const resetSecretRedisKey = getPasswordResetRedisKey(resetSecret);
+
+    await redisClient.set(
+      resetSecretRedisKey,
+      JSON.stringify({
+        userId: user._id.toString(),
+      }),
+      "EX",
+      RESET_SECRET_TTL_SECONDS,
+    );
+
+    const resetLink = `${env.CLIENT_APP_URL}/reset-password?secret=${encodeURIComponent(resetSecret)}`;
+
+    try {
+      await sendPasswordResetEmail(user.email, resetLink);
+    } catch (emailError) {
+      console.error("Failed to send password reset email", emailError);
+    }
+  }
+
+  response.status(200).json({
+    success: true,
+    message: "If an account exists, reset instructions were sent.",
+  });
+};
+
+export const resetPassword = async (
+  request: Request<unknown, unknown, ResetPasswordRequestBody, ResetPasswordRequestQuery>,
+  response: Response,
+): Promise<void> => {
+  const { secret } = request.query;
+  const { password } = request.body;
+  const redisClient = await connectToRedis();
+  const resetSecretRedisKey = getPasswordResetRedisKey(secret);
+  const resetSecretRecord = await redisClient.get(resetSecretRedisKey);
+
+  if (!resetSecretRecord) {
+    throw createApiError("Reset secret is invalid or expired", 401);
+  }
+
+  let parsedSecretRecord: { userId: string };
+  try {
+    parsedSecretRecord = JSON.parse(resetSecretRecord) as { userId: string };
+  } catch {
+    await redisClient.del(resetSecretRedisKey);
+    throw createApiError("Reset secret is invalid or expired", 401);
+  }
+
+  if (
+    !parsedSecretRecord.userId ||
+    !Types.ObjectId.isValid(parsedSecretRecord.userId)
+  ) {
+    await redisClient.del(resetSecretRedisKey);
+    throw createApiError("Reset secret is invalid or expired", 401);
+  }
+
+  const user = await UserModel.findById(parsedSecretRecord.userId).select("+password");
+  if (!user || user.isDeleted) {
+    await redisClient.del(resetSecretRedisKey);
+    throw createApiError("Reset secret is invalid or expired", 401);
+  }
+
+  const availableAuthMethods = user.authMethods ?? [user.authType ?? "email"];
+  if (!availableAuthMethods.includes("email")) {
+    throw createApiError("This account is linked to Google sign-in only", 401);
+  }
+
+  user.password = await bcrypt.hash(password, 10);
+  user.authType = "email";
+  user.authMethods = mergeAuthMethods(availableAuthMethods, "email");
+  await user.save();
+  await redisClient.del(resetSecretRedisKey);
+
+  response.status(200).json({
+    success: true,
+    message: "Password reset successful.",
   });
 };

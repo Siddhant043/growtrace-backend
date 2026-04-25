@@ -45,7 +45,10 @@ export const validateRequest =
       request.params = parsedPayload.data.params as Request['params']
     }
     if (parsedPayload.data.query !== undefined) {
-      request.query = parsedPayload.data.query as Request['query']
+      Object.assign(
+        request.query as Record<string, unknown>,
+        parsedPayload.data.query as Record<string, unknown>,
+      )
     }
     next()
   }

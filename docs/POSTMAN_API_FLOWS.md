@@ -133,6 +133,68 @@ pm.environment.set("authToken", body.token);
 
 ---
 
+### 4.3 Forgot Password
+
+**Request**
+
+- Method: `POST`
+- URL: `{{baseUrl}}/api/auth/forgot-password`
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "email": "creator1@example.com"
+}
+```
+
+**Expected**
+
+- Status: `200 OK`
+- Response:
+  - `success: true`
+  - `message: "If an account exists, reset instructions were sent."`
+
+**Notes**
+
+- The endpoint always returns a generic success message to avoid email enumeration.
+- If the account exists, a reset link is sent with a `secret` query parameter.
+- Reset secret TTL: 10 minutes.
+
+---
+
+### 4.4 Reset Password
+
+**Request**
+
+- Method: `POST`
+- URL: `{{baseUrl}}/api/auth/reset-password?secret=<RESET_SECRET>`
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "password": "NewSecurePass123",
+  "confirmPassword": "NewSecurePass123"
+}
+```
+
+**Expected**
+
+- Status: `200 OK`
+- Response:
+  - `success: true`
+  - `message: "Password reset successful."`
+
+**Failure Cases**
+
+- Missing/invalid/expired `secret` -> `401`
+- Password mismatch -> `400` validation error
+
+---
+
 ## 5) Auth - Google Flows
 
 > Use a valid Google ID token from your client auth flow.

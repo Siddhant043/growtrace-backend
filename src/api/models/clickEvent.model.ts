@@ -61,7 +61,6 @@ const clickEventSchema = new Schema(
 );
 
 clickEventSchema.index({ linkId: 1, timestamp: -1 });
-clickEventSchema.index({ userId: 1 });
 clickEventSchema.index({ userId: 1, timestamp: -1 });
 clickEventSchema.index({ platform: 1 });
 

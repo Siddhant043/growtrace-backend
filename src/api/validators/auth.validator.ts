@@ -41,6 +41,24 @@ const googleLoginBodySchema = z.object({
   idToken: z.string().min(1, 'Google idToken is required'),
 })
 
+const forgotPasswordBodySchema = z.object({
+  email: normalizedEmailSchema,
+})
+
+const resetPasswordQuerySchema = z.object({
+  secret: z.string().min(1, 'secret is required'),
+})
+
+const resetPasswordBodySchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
+  })
+  .refine((body) => body.password === body.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+
 export const signupRequestSchema = z.object({
   body: z.discriminatedUnion('authType', [
     emailSignupBodySchema,
@@ -55,5 +73,17 @@ export const loginRequestSchema = z.object({
   ]),
 })
 
+export const forgotPasswordRequestSchema = z.object({
+  body: forgotPasswordBodySchema,
+})
+
+export const resetPasswordRequestSchema = z.object({
+  query: resetPasswordQuerySchema,
+  body: resetPasswordBodySchema,
+})
+
 export type SignupRequestBody = z.infer<typeof signupRequestSchema>['body']
 export type LoginRequestBody = z.infer<typeof loginRequestSchema>['body']
+export type ForgotPasswordRequestBody = z.infer<typeof forgotPasswordRequestSchema>['body']
+export type ResetPasswordRequestBody = z.infer<typeof resetPasswordRequestSchema>['body']
+export type ResetPasswordRequestQuery = z.infer<typeof resetPasswordRequestSchema>['query']

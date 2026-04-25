@@ -15,6 +15,7 @@ import rateLimit from "express-rate-limit";
 import apiRouter from "./api/routes";
 import { notFoundHandler } from "./api/middlewares/notFoundHandler";
 import { errorHandler } from "./api/middlewares/errorHandler";
+import redirectRouter from "./api/routes/redirect";
 
 const app = express();
 
@@ -46,17 +47,22 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per `windowMs`
-    message: "Too many requests, please try again later.",
-    standardHeaders: true,
-    legacyHeaders: false,
-  }),
-);
+const shouldEnableRateLimiting = !["development", "test"].includes(env.ENV);
+
+if (shouldEnableRateLimiting) {
+  app.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      limit: 100, // Limit each IP to 100 requests per `windowMs`
+      message: "Too many requests, please try again later.",
+      standardHeaders: true,
+      legacyHeaders: false,
+    }),
+  );
+}
 app.use("/api", apiRequestLoggerMiddleware);
 app.use("/api", apiRouter);
+app.use("/", redirectRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

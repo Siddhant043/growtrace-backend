@@ -63,8 +63,6 @@ if (shouldEnableRateLimiting) {
 app.use("/api", apiRequestLoggerMiddleware);
 app.use("/api", apiRouter);
 app.use("/", redirectRouter);
-app.use(notFoundHandler);
-app.use(errorHandler);
 
 app.get("/api/health", (_request: Request, response: Response) => {
   const redisClient = getRedisClient();
@@ -92,6 +90,9 @@ app.get("/api/health", (_request: Request, response: Response) => {
 
   response.status(200).json(healthStatus);
 });
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 const startServer = async (): Promise<void> => {
   await connectToDatabase();

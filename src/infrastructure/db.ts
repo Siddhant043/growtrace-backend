@@ -4,7 +4,10 @@ import { env } from "../config/env";
 
 const createMongoConnectionUri = (): string => {
   const trimmedMongoUri = env.MONGO_URI.trim();
-  const mongoUriWithProtocol = trimmedMongoUri.startsWith("mongodb://")
+  const hasMongoProtocol =
+    trimmedMongoUri.startsWith("mongodb://") ||
+    trimmedMongoUri.startsWith("mongodb+srv://");
+  const mongoUriWithProtocol = hasMongoProtocol
     ? trimmedMongoUri
     : `mongodb://${trimmedMongoUri}`;
 

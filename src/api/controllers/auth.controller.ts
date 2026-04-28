@@ -76,7 +76,7 @@ const mapUserForAuthResponse = (user: {
   isSubscriptionActive?: boolean;
   authType?: AuthType;
   authMethods?: AuthType[];
-}) => ({
+}) => {
   const normalizedEmail = normalizeRequiredString(user.email, "unknown@growtrace.local");
   const normalizedFullName = normalizeRequiredString(
     user.fullName,

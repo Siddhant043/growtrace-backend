@@ -59,6 +59,17 @@ const resetPasswordBodySchema = z
     path: ['confirmPassword'],
   })
 
+const updatePasswordBodySchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: passwordSchema,
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
+  })
+  .refine((body) => body.newPassword === body.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+
 export const signupRequestSchema = z.object({
   body: z.discriminatedUnion('authType', [
     emailSignupBodySchema,
@@ -82,8 +93,13 @@ export const resetPasswordRequestSchema = z.object({
   body: resetPasswordBodySchema,
 })
 
+export const updatePasswordRequestSchema = z.object({
+  body: updatePasswordBodySchema,
+})
+
 export type SignupRequestBody = z.infer<typeof signupRequestSchema>['body']
 export type LoginRequestBody = z.infer<typeof loginRequestSchema>['body']
 export type ForgotPasswordRequestBody = z.infer<typeof forgotPasswordRequestSchema>['body']
 export type ResetPasswordRequestBody = z.infer<typeof resetPasswordRequestSchema>['body']
 export type ResetPasswordRequestQuery = z.infer<typeof resetPasswordRequestSchema>['query']
+export type UpdatePasswordRequestBody = z.infer<typeof updatePasswordRequestSchema>['body']

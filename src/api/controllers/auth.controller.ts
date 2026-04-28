@@ -27,6 +27,11 @@ type AuthUserRecord = {
   email: string;
   userType: UserType;
   isDeleted: boolean;
+  imageUrl?: string | null;
+  subscriptionStartDate?: Date | null;
+  subscriptionEndDate?: Date | null;
+  isLifetimeSubscription?: boolean;
+  isSubscriptionActive?: boolean;
   authType?: AuthType;
   authMethods?: AuthType[];
   password?: string;
@@ -47,6 +52,11 @@ const mapUserForAuthResponse = (user: {
   email: string;
   userType: UserType;
   isDeleted: boolean;
+  imageUrl?: string | null;
+  subscriptionStartDate?: Date | null;
+  subscriptionEndDate?: Date | null;
+  isLifetimeSubscription?: boolean;
+  isSubscriptionActive?: boolean;
   authType?: AuthType;
   authMethods?: AuthType[];
 }) => ({
@@ -55,6 +65,11 @@ const mapUserForAuthResponse = (user: {
   email: user.email,
   userType: user.userType,
   isDeleted: user.isDeleted,
+  imageUrl: user.imageUrl ?? null,
+  subscriptionStartDate: user.subscriptionStartDate ?? null,
+  subscriptionEndDate: user.subscriptionEndDate ?? null,
+  isLifetimeSubscription: user.isLifetimeSubscription ?? false,
+  isSubscriptionActive: user.isSubscriptionActive ?? false,
   authType: user.authType ?? "email",
   authMethods: user.authMethods ?? [user.authType ?? "email"],
 });
@@ -114,6 +129,9 @@ export const signup = async (
       existingUser.emailVerified =
         existingUser.emailVerified || verifiedGoogleIdentity.emailVerified;
       existingUser.authType = existingUser.authType ?? "email";
+      if (verifiedGoogleIdentity.imageUrl) {
+        existingUser.imageUrl = verifiedGoogleIdentity.imageUrl;
+      }
       if (!existingUser.fullName?.trim().length) {
         existingUser.fullName = verifiedGoogleIdentity.fullName;
       }
@@ -132,6 +150,7 @@ export const signup = async (
         authMethods: ["google"],
         googleSub: verifiedGoogleIdentity.googleSub,
         emailVerified: verifiedGoogleIdentity.emailVerified,
+        imageUrl: verifiedGoogleIdentity.imageUrl,
       })) as unknown as AuthUserRecord;
     }
   } else {
@@ -226,6 +245,9 @@ export const login = async (
       existingUser.googleSub = verifiedGoogleIdentity.googleSub;
       existingUser.emailVerified =
         existingUser.emailVerified || verifiedGoogleIdentity.emailVerified;
+      if (verifiedGoogleIdentity.imageUrl) {
+        existingUser.imageUrl = verifiedGoogleIdentity.imageUrl;
+      }
       if (!existingUser.authType) {
         existingUser.authType = "google";
       }
@@ -245,6 +267,7 @@ export const login = async (
         authMethods: ["google"],
         googleSub: verifiedGoogleIdentity.googleSub,
         emailVerified: verifiedGoogleIdentity.emailVerified,
+        imageUrl: verifiedGoogleIdentity.imageUrl,
       })) as unknown as AuthUserRecord;
     }
   } else {
@@ -352,11 +375,14 @@ export const resetPassword = async (
     unknown,
     unknown,
     ResetPasswordRequestBody,
-    ResetPasswordRequestQuery
+    Partial<ResetPasswordRequestQuery>
   >,
   response: Response,
 ): Promise<void> => {
   const { secret } = request.query;
+  if (!secret) {
+    throw createApiError("Reset secret is invalid or expired", 401);
+  }
   const { password } = request.body;
   const redisClient = await connectToRedis();
   const resetSecretRedisKey = getPasswordResetRedisKey(secret);

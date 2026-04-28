@@ -46,6 +46,23 @@ const createApiError = (message: string, statusCode: number): ApiError => {
   return apiError;
 };
 
+const normalizeOptionalString = (value: unknown): string | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalizedValue = value.trim();
+  return normalizedValue.length > 0 ? normalizedValue : null;
+};
+
+const normalizeRequiredString = (
+  value: unknown,
+  fallbackValue: string,
+): string => {
+  const normalizedValue = normalizeOptionalString(value);
+  return normalizedValue ?? fallbackValue;
+};
+
 const mapUserForAuthResponse = (user: {
   _id: { toString(): string };
   fullName: string;
@@ -60,19 +77,27 @@ const mapUserForAuthResponse = (user: {
   authType?: AuthType;
   authMethods?: AuthType[];
 }) => ({
+  const normalizedEmail = normalizeRequiredString(user.email, "unknown@growtrace.local");
+  const normalizedFullName = normalizeRequiredString(
+    user.fullName,
+    normalizedEmail,
+  );
+
+  return {
   id: user._id.toString(),
-  fullName: user.fullName,
-  email: user.email,
+  fullName: normalizedFullName,
+  email: normalizedEmail,
   userType: user.userType,
   isDeleted: user.isDeleted,
-  imageUrl: user.imageUrl ?? null,
+  imageUrl: normalizeOptionalString(user.imageUrl),
   subscriptionStartDate: user.subscriptionStartDate ?? null,
   subscriptionEndDate: user.subscriptionEndDate ?? null,
   isLifetimeSubscription: user.isLifetimeSubscription ?? false,
   isSubscriptionActive: user.isSubscriptionActive ?? false,
   authType: user.authType ?? "email",
   authMethods: user.authMethods ?? [user.authType ?? "email"],
-});
+  };
+};
 
 const mergeAuthMethods = (
   currentMethods: AuthType[] | undefined,

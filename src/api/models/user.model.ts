@@ -150,20 +150,6 @@ const syncSubscriptionStatusOnFetchedDocument = (
   user.isSubscriptionActive = getComputedSubscriptionStatus(user, new Date());
 };
 
-const ensureSubscriptionFieldsForStatusCheck = function ensureSubscriptionFieldsForStatusCheck(
-  this: { select: (projection: Record<string, 1>) => void },
-): void {
-  this.select({
-    isLifetimeSubscription: 1,
-    subscriptionStartDate: 1,
-    subscriptionEndDate: 1,
-    isSubscriptionActive: 1,
-  });
-};
-
-userSchema.pre("find", ensureSubscriptionFieldsForStatusCheck);
-userSchema.pre("findOne", ensureSubscriptionFieldsForStatusCheck);
-
 const syncSubscriptionStatusAfterFetch = (
   result: SubscriptionStatusSource[] | SubscriptionStatusSource | null,
 ): void => {

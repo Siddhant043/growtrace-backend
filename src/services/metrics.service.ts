@@ -8,21 +8,13 @@ import {
   ENGAGEMENT_SCROLL_WEIGHT,
   ENGAGEMENT_TIME_WEIGHT,
 } from "../api/constants/engagement";
-import { formatDateAsUtcIsoDate } from "./metricsAggregation.service";
+import {
+  resolveDateRange,
+  type DateRangeInput,
+  type ResolvedDateRange,
+} from "./dateRange.utils";
 
-const DEFAULT_RANGE_DAYS = 30;
-
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-export type DateRangeInput = {
-  fromDate?: string;
-  toDate?: string;
-};
-
-export type ResolvedDateRange = {
-  fromDate: string;
-  toDate: string;
-};
+export type { DateRangeInput, ResolvedDateRange } from "./dateRange.utils";
 
 export type EngagementMetricsSummary = {
   totalSessions: number;
@@ -62,35 +54,6 @@ const buildEmptyMetricsSummary = (): EngagementMetricsSummary => ({
   bounceRate: 0,
   engagementScore: 0,
 });
-
-const isValidIsoDate = (value: string | undefined): value is string =>
-  typeof value === "string" && ISO_DATE_REGEX.test(value);
-
-export const resolveDateRange = (
-  rangeInput: DateRangeInput,
-): ResolvedDateRange => {
-  const today = new Date();
-  const defaultToDate = formatDateAsUtcIsoDate(today);
-
-  const defaultFromBoundary = new Date(today);
-  defaultFromBoundary.setUTCDate(
-    defaultFromBoundary.getUTCDate() - (DEFAULT_RANGE_DAYS - 1),
-  );
-  const defaultFromDate = formatDateAsUtcIsoDate(defaultFromBoundary);
-
-  const resolvedFromDate = isValidIsoDate(rangeInput.fromDate)
-    ? rangeInput.fromDate
-    : defaultFromDate;
-  const resolvedToDate = isValidIsoDate(rangeInput.toDate)
-    ? rangeInput.toDate
-    : defaultToDate;
-
-  if (resolvedFromDate > resolvedToDate) {
-    return { fromDate: resolvedToDate, toDate: resolvedFromDate };
-  }
-
-  return { fromDate: resolvedFromDate, toDate: resolvedToDate };
-};
 
 type AggregatedRangeRollupRow = {
   totalSessions: number;

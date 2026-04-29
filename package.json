@@ -11,6 +11,7 @@
     "start": "tsx src/server.ts",
     "dev": "nodemon --exec \"tsx src/server.ts\"",
     "backfill:session-meta": "tsx src/workers/scripts/backfillSessionPlatformCampaign.ts",
+    "backfill:click-campaign": "tsx src/workers/scripts/backfillClickEventCampaign.ts",
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "check": "npm run lint && npm run format"

@@ -5,17 +5,30 @@ import { env } from "../config/env";
 
 export const BEHAVIOR_EVENTS_QUEUE_NAME = "behaviorEvents";
 export const METRICS_AGGREGATION_QUEUE_NAME = "metricsAggregation";
+export const FUNNEL_AGGREGATION_QUEUE_NAME = "funnelAggregation";
 
 export const METRICS_AGGREGATION_SCHEDULER_IDS = {
   currentUtcDay: "recompute-current-utc-day",
   previousUtcDay: "recompute-previous-utc-day",
 } as const;
 
+export const FUNNEL_AGGREGATION_SCHEDULER_IDS = {
+  currentUtcDay: "recompute-current-utc-day-funnel",
+  previousUtcDay: "recompute-previous-utc-day-funnel",
+} as const;
+
 export type MetricsAggregationSchedulerId =
   (typeof METRICS_AGGREGATION_SCHEDULER_IDS)[keyof typeof METRICS_AGGREGATION_SCHEDULER_IDS];
 
+export type FunnelAggregationSchedulerId =
+  (typeof FUNNEL_AGGREGATION_SCHEDULER_IDS)[keyof typeof FUNNEL_AGGREGATION_SCHEDULER_IDS];
+
 export interface MetricsAggregationJobPayload {
   schedulerId: MetricsAggregationSchedulerId;
+}
+
+export interface FunnelAggregationJobPayload {
+  schedulerId: FunnelAggregationSchedulerId;
 }
 
 export interface BehaviorEventJobPayload {
@@ -167,6 +180,75 @@ export const scheduleRecurringMetricsAggregation = async (): Promise<void> => {
         name: METRICS_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
         data: {
           schedulerId: METRICS_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
+        },
+      },
+    ),
+  ]);
+};
+
+let cachedFunnelAggregationQueue: Queue<FunnelAggregationJobPayload> | null =
+  null;
+
+export const getFunnelAggregationQueue =
+  (): Queue<FunnelAggregationJobPayload> => {
+    if (cachedFunnelAggregationQueue) {
+      return cachedFunnelAggregationQueue;
+    }
+
+    cachedFunnelAggregationQueue = new Queue<FunnelAggregationJobPayload>(
+      FUNNEL_AGGREGATION_QUEUE_NAME,
+      {
+        connection: getBullmqRedisConnection(),
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: "exponential", delay: 1000 },
+          removeOnComplete: { age: 3600, count: 200 },
+          removeOnFail: { age: 86400 },
+        },
+      },
+    );
+
+    return cachedFunnelAggregationQueue;
+  };
+
+export const createFunnelAggregationWorker = (
+  processor: Processor<FunnelAggregationJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<FunnelAggregationJobPayload> => {
+  return new Worker<FunnelAggregationJobPayload>(
+    FUNNEL_AGGREGATION_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency: workerOptions.concurrency ?? 1,
+      ...workerOptions,
+    },
+  );
+};
+
+const FUNNEL_AGGREGATION_RECURRING_PATTERN = "*/5 * * * *";
+
+export const scheduleRecurringFunnelAggregation = async (): Promise<void> => {
+  const funnelQueue = getFunnelAggregationQueue();
+
+  await Promise.all([
+    funnelQueue.upsertJobScheduler(
+      FUNNEL_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
+      { pattern: FUNNEL_AGGREGATION_RECURRING_PATTERN },
+      {
+        name: FUNNEL_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
+        data: {
+          schedulerId: FUNNEL_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
+        },
+      },
+    ),
+    funnelQueue.upsertJobScheduler(
+      FUNNEL_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
+      { pattern: FUNNEL_AGGREGATION_RECURRING_PATTERN },
+      {
+        name: FUNNEL_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
+        data: {
+          schedulerId: FUNNEL_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
         },
       },
     ),

@@ -21,9 +21,13 @@ import {
   BULL_BOARD_BASE_PATH,
   createBullBoardServerAdapter,
 } from "./infrastructure/bullBoard";
-import { scheduleRecurringMetricsAggregation } from "./infrastructure/queue";
+import {
+  scheduleRecurringFunnelAggregation,
+  scheduleRecurringMetricsAggregation,
+} from "./infrastructure/queue";
 import { startBehaviorEventsWorker } from "./workers/behaviorEvents.worker";
 import { startMetricsAggregationWorker } from "./workers/metricsAggregation.worker";
+import { startFunnelAggregationWorker } from "./workers/funnelAggregation.worker";
 
 const app = express();
 
@@ -132,6 +136,16 @@ const startServer = async (): Promise<void> => {
     "metricsAggregation jobs scheduled (every 5m, current+previous UTC day)",
   );
 
+  const funnelAggregationWorker = startFunnelAggregationWorker();
+  console.log(
+    `funnelAggregation worker running (env=${env.ENV}, pid=${process.pid})`,
+  );
+
+  await scheduleRecurringFunnelAggregation();
+  console.log(
+    "funnelAggregation jobs scheduled (every 5m, current+previous UTC day)",
+  );
+
   const httpServer = app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
     console.log(
@@ -146,6 +160,7 @@ const startServer = async (): Promise<void> => {
       await Promise.all([
         behaviorEventsWorker.close(),
         metricsAggregationWorker.close(),
+        funnelAggregationWorker.close(),
       ]);
     } finally {
       process.exit(0);

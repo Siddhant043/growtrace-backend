@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { LinkModel } from "../models/link.model";
 import { logClick } from "../../services/tracking.service";
 import { appendTrackingParam } from "../utils/appendTrackingParam";
+import { isLikelyBot } from "../utils/isLikelyBot";
 
 type ApiError = Error & { statusCode: number };
 
@@ -29,12 +30,17 @@ export const redirectUsingShortCode = async (
     throw createApiError("Short link not found", 404);
   }
 
-  void logClick(link, request).catch((error: unknown) => {
-    console.error("Click logging failed", {
-      shortCode: requestedShortCode,
-      error,
+  const requesterUserAgent = request.get("user-agent");
+  const requesterIsLikelyBot = isLikelyBot(requesterUserAgent);
+
+  if (!requesterIsLikelyBot) {
+    void logClick(link, request).catch((error: unknown) => {
+      console.error("Click logging failed", {
+        shortCode: requestedShortCode,
+        error,
+      });
     });
-  });
+  }
 
   const trackedRedirectUrl = appendTrackingParam(
     link.originalUrl,

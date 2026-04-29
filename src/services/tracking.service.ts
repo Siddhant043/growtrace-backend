@@ -7,7 +7,7 @@ import { parseUserAgent } from "../api/utils/parseUserAgent";
 
 type TrackingLinkPayload = Pick<
   LinkDocument,
-  "_id" | "userId" | "platform" | "postId"
+  "_id" | "userId" | "platform" | "postId" | "campaign"
 >;
 
 const resolveClientIpAddress = (request: Request): string | undefined => {
@@ -35,6 +35,7 @@ export const logClick = async (
     userId: link.userId,
     platform: link.platform,
     postId: link.postId,
+    campaign: link.campaign ?? null,
     timestamp: new Date(),
     country,
     deviceType,

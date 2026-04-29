@@ -29,6 +29,12 @@ const clickEventSchema = new Schema(
       trim: true,
       default: null,
     },
+    campaign: {
+      type: String,
+      trim: true,
+      default: null,
+      index: true,
+    },
     timestamp: {
       type: Date,
       default: Date.now,
@@ -63,6 +69,8 @@ const clickEventSchema = new Schema(
 clickEventSchema.index({ linkId: 1, timestamp: -1 });
 clickEventSchema.index({ userId: 1, timestamp: -1 });
 clickEventSchema.index({ platform: 1 });
+clickEventSchema.index({ userId: 1, timestamp: -1, platform: 1 });
+clickEventSchema.index({ userId: 1, timestamp: -1, campaign: 1 });
 
 export type ClickEventDocument = InferSchemaType<typeof clickEventSchema> & {
   _id: Types.ObjectId;

@@ -36,6 +36,10 @@ const sessionSchema = new Schema(
       default: null,
       index: true,
     },
+    firstClickAt: {
+      type: Date,
+      default: null,
+    },
     firstVisitAt: {
       type: Date,
       default: Date.now,

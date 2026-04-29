@@ -33,8 +33,10 @@ export const redirectUsingShortCode = async (
   const requesterUserAgent = request.get("user-agent");
   const requesterIsLikelyBot = isLikelyBot(requesterUserAgent);
 
+  const clickTimestamp = new Date();
+
   if (!requesterIsLikelyBot) {
-    void logClick(link, request).catch((error: unknown) => {
+    void logClick(link, request, clickTimestamp).catch((error: unknown) => {
       console.error("Click logging failed", {
         shortCode: requestedShortCode,
         error,
@@ -45,6 +47,7 @@ export const redirectUsingShortCode = async (
   const trackedRedirectUrl = appendTrackingParam(
     link.originalUrl,
     link._id.toString(),
+    clickTimestamp.getTime(),
   );
 
   response.redirect(302, trackedRedirectUrl);

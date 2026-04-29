@@ -55,6 +55,7 @@ export interface BehaviorEventJobPayload {
   country: string;
   userAgentHeader: string;
   receivedAt: number;
+  firstClickAtMs?: number;
 }
 
 let bullmqRedisConnection: Redis | null = null;

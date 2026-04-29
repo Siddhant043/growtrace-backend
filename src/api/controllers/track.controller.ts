@@ -116,6 +116,9 @@ export const ingestTrackingEvent = async (
     country,
     userAgentHeader,
     receivedAt: Date.now(),
+    ...(typeof eventBody.firstClickAt === "number"
+      ? { firstClickAtMs: eventBody.firstClickAt }
+      : {}),
   };
 
   enqueueBehaviorEvent(jobPayload).catch((enqueueError: unknown) => {

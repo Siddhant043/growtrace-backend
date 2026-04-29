@@ -23,6 +23,7 @@ const resolveClientIpAddress = (request: Request): string | undefined => {
 export const logClick = async (
   link: TrackingLinkPayload,
   request: Request,
+  clickTimestamp: Date = new Date(),
 ): Promise<void> => {
   const ipAddress = resolveClientIpAddress(request);
   const userAgentHeader = request.get("user-agent");
@@ -36,7 +37,7 @@ export const logClick = async (
     platform: link.platform,
     postId: link.postId,
     campaign: link.campaign ?? null,
-    timestamp: new Date(),
+    timestamp: clickTimestamp,
     country,
     deviceType,
     browser,

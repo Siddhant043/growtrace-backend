@@ -42,6 +42,7 @@ const trackEventBodySchema = z.object({
       linkIdValue && linkIdValue.length > 0 ? linkIdValue : null,
     ),
   isReturning: z.boolean().optional().default(false),
+  firstClickAt: z.number().int().nonnegative().optional(),
 });
 
 export const trackEventRequestSchema = z.object({

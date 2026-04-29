@@ -75,6 +75,9 @@ const upsertSessionForPageView = async (
         sessionId: jobPayload.sessionId,
         userId: new Types.ObjectId(jobPayload.userId),
         firstVisitAt: eventTimestamp,
+        ...(typeof jobPayload.firstClickAtMs === "number"
+          ? { firstClickAt: new Date(jobPayload.firstClickAtMs) }
+          : {}),
         isReturning: jobPayload.isReturning,
         entryUrl: jobPayload.page.url,
         referrer: jobPayload.page.referrer,

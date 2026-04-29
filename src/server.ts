@@ -16,6 +16,14 @@ import apiRouter from "./api/routes";
 import { notFoundHandler } from "./api/middlewares/notFoundHandler";
 import { errorHandler } from "./api/middlewares/errorHandler";
 import redirectRouter from "./api/routes/redirect";
+import trackRouter from "./api/routes/track";
+import {
+  BULL_BOARD_BASE_PATH,
+  createBullBoardServerAdapter,
+} from "./infrastructure/bullBoard";
+import { scheduleRecurringMetricsAggregation } from "./infrastructure/queue";
+import { startBehaviorEventsWorker } from "./workers/behaviorEvents.worker";
+import { startMetricsAggregationWorker } from "./workers/metricsAggregation.worker";
 
 const app = express();
 
@@ -60,6 +68,11 @@ if (shouldEnableRateLimiting) {
     }),
   );
 }
+app.use("/track", trackRouter);
+
+const bullBoardServerAdapter = createBullBoardServerAdapter();
+app.use(BULL_BOARD_BASE_PATH, bullBoardServerAdapter.getRouter());
+
 app.use("/api", apiRequestLoggerMiddleware);
 app.use("/api", apiRouter);
 app.use("/", redirectRouter);
@@ -104,8 +117,46 @@ const startServer = async (): Promise<void> => {
   await connectToRabbitMQ();
   console.log("RabbitMQ connected successfully");
 
-  app.listen(env.PORT, () => {
+  const behaviorEventsWorker = startBehaviorEventsWorker();
+  console.log(
+    `behaviorEvents worker running (env=${env.ENV}, pid=${process.pid})`,
+  );
+
+  const metricsAggregationWorker = startMetricsAggregationWorker();
+  console.log(
+    `metricsAggregation worker running (env=${env.ENV}, pid=${process.pid})`,
+  );
+
+  await scheduleRecurringMetricsAggregation();
+  console.log(
+    "metricsAggregation jobs scheduled (every 5m, current+previous UTC day)",
+  );
+
+  const httpServer = app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
+    console.log(
+      `Bull Board running on http://localhost:${env.PORT}${BULL_BOARD_BASE_PATH}`,
+    );
+  });
+
+  const shutdownGracefully = async (signalName: string): Promise<void> => {
+    console.log(`Received ${signalName}, shutting down...`);
+    httpServer.close();
+    try {
+      await Promise.all([
+        behaviorEventsWorker.close(),
+        metricsAggregationWorker.close(),
+      ]);
+    } finally {
+      process.exit(0);
+    }
+  };
+
+  process.once("SIGINT", () => {
+    void shutdownGracefully("SIGINT");
+  });
+  process.once("SIGTERM", () => {
+    void shutdownGracefully("SIGTERM");
   });
 };
 

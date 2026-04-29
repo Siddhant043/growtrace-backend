@@ -10,6 +10,7 @@
     "test": "vitest run",
     "start": "tsx src/server.ts",
     "dev": "nodemon --exec \"tsx src/server.ts\"",
+    "backfill:session-meta": "tsx src/workers/scripts/backfillSessionPlatformCampaign.ts",
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "check": "npm run lint && npm run format"
@@ -20,9 +21,12 @@
   "dependencies": {
     "@babel/parser": "^7.29.2",
     "@babel/traverse": "^7.29.0",
+    "@bull-board/api": "^7.0.0",
+    "@bull-board/express": "^7.0.0",
     "@types/amqplib": "^0.10.8",
     "amqplib": "^1.0.3",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.76.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "crypto": "^1.0.1",

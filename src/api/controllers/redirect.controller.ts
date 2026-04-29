@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { LinkModel } from "../models/link.model";
 import { logClick } from "../../services/tracking.service";
+import { appendTrackingParam } from "../utils/appendTrackingParam";
 
 type ApiError = Error & { statusCode: number };
 
@@ -35,5 +36,10 @@ export const redirectUsingShortCode = async (
     });
   });
 
-  response.redirect(302, link.originalUrl);
+  const trackedRedirectUrl = appendTrackingParam(
+    link.originalUrl,
+    link._id.toString(),
+  );
+
+  response.redirect(302, trackedRedirectUrl);
 };

@@ -3,6 +3,7 @@ import type { Request, Response } from 'express'
 
 import { UserModel } from '../models/user.model'
 import type { AuthenticatedRequest } from '../middlewares/authenticate'
+import { getEffectivePlanForUser } from '../../services/planInfo.service'
 import type { UpdatePasswordRequestBody } from '../validators/auth.validator'
 
 const mapUserProfileResponse = (user: {
@@ -91,5 +92,28 @@ export const updateCurrentUserPassword = async (
   response.status(200).json({
     success: true,
     message: 'Password updated successfully.',
+  })
+}
+
+export const getCurrentUserPlan = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = request as AuthenticatedRequest
+  const planInfo = await getEffectivePlanForUser(
+    authenticatedRequest.authenticatedUser.id,
+  )
+
+  response.status(200).json({
+    success: true,
+    data: {
+      plan: planInfo.plan,
+      status: planInfo.status,
+      features: planInfo.features,
+      currentPeriodEnd: planInfo.currentPeriodEnd,
+      cancelAtCycleEnd: planInfo.cancelAtCycleEnd,
+      lifetime: planInfo.lifetime,
+      manage: planInfo.manage,
+    },
   })
 }

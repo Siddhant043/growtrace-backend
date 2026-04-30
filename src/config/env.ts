@@ -135,6 +135,21 @@ const runtimeEnvironmentSchema = z.object({
     .string()
     .email("ALERTS_FROM_EMAIL must be a valid email address")
     .optional(),
+  RAZORPAY_KEY_ID: z.string().min(1, "RAZORPAY_KEY_ID is required"),
+  RAZORPAY_KEY_SECRET: z.string().min(1, "RAZORPAY_KEY_SECRET is required"),
+  RAZORPAY_WEBHOOK_SECRET: z
+    .string()
+    .min(1, "RAZORPAY_WEBHOOK_SECRET is required"),
+  RAZORPAY_PRO_MONTHLY_PLAN_ID: z
+    .string()
+    .min(1, "RAZORPAY_PRO_MONTHLY_PLAN_ID is required"),
+  RAZORPAY_PRO_YEARLY_PLAN_ID: z.string().min(1).optional(),
+  BILLING_GRACE_PERIOD_HOURS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(168)
+    .default(24),
 });
 
 const parsedRuntimeEnvironment = runtimeEnvironmentSchema.safeParse(

@@ -68,7 +68,20 @@ app.use(helmet());
 app.use(cors());
 app.use(cookieParser());
 app.use(morgan("dev"));
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (request, _response, rawBuffer) => {
+      if (
+        typeof request.url === "string" &&
+        request.url.startsWith("/api/webhooks/")
+      ) {
+        (request as Request & { rawBody?: Buffer }).rawBody = Buffer.from(
+          rawBuffer,
+        );
+      }
+    },
+  }),
+);
 const shouldEnableRateLimiting = !["development", "test"].includes(env.ENV);
 
 if (shouldEnableRateLimiting) {

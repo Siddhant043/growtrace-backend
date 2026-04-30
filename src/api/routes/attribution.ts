@@ -7,6 +7,7 @@ import {
 } from "../controllers/attribution.controller";
 import { asyncHandler } from "../middlewares/asyncHandler";
 import { authenticate } from "../middlewares/authenticate";
+import { requirePlan } from "../middlewares/requirePlan";
 import { validateRequest } from "../middlewares/validateRequest";
 import {
   getAttributionJourneyDetailRequestSchema,
@@ -15,24 +16,22 @@ import {
 } from "../validators/attribution.validator";
 
 const attributionRouter = Router();
+attributionRouter.use(authenticate, requirePlan("pro"));
 
 attributionRouter.get(
   "/summary",
-  authenticate,
   validateRequest(getAttributionSummaryRequestSchema),
   asyncHandler(getAttributionSummaryForCurrentUser),
 );
 
 attributionRouter.get(
   "/journeys",
-  authenticate,
   validateRequest(getAttributionRecentJourneysRequestSchema),
   asyncHandler(getAttributionRecentJourneysForCurrentUser),
 );
 
 attributionRouter.get(
   "/journey/:userTrackingId",
-  authenticate,
   validateRequest(getAttributionJourneyDetailRequestSchema),
   asyncHandler(getAttributionJourneyDetailForCurrentUser),
 );

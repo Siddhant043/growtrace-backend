@@ -9,10 +9,12 @@ import funnelRouter from "./funnel";
 import linkRouter from "./link";
 import metricsRouter from "./metrics";
 import notificationsRouter from "./notifications";
+import paymentsRouter from "./payments";
 import reportsRouter from "./reports";
 import sessionRouter from "./session";
 import trackRouter from "./track";
 import userRouter from "./users";
+import webhooksRouter from "./webhooks";
 
 const apiRouter = Router();
 
@@ -28,6 +30,8 @@ apiRouter.use("/reports", reportsRouter);
 apiRouter.use("/attribution", attributionRouter);
 apiRouter.use("/audience", audienceRouter);
 apiRouter.use("/notifications", notificationsRouter);
+apiRouter.use("/payments", paymentsRouter);
+apiRouter.use("/webhooks", webhooksRouter);
 apiRouter.use("/track", trackRouter);
 
 export default apiRouter;

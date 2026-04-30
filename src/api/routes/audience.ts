@@ -9,6 +9,7 @@ import {
 } from "../controllers/audience.controller";
 import { asyncHandler } from "../middlewares/asyncHandler";
 import { authenticate } from "../middlewares/authenticate";
+import { requirePlan } from "../middlewares/requirePlan";
 import { validateRequest } from "../middlewares/validateRequest";
 import {
   getAudienceCohortsRequestSchema,
@@ -19,38 +20,34 @@ import {
 } from "../validators/audience.validator";
 
 const audienceRouter = Router();
+audienceRouter.use(authenticate, requirePlan("pro"));
 
 audienceRouter.get(
   "/segments",
-  authenticate,
   validateRequest(getAudienceSegmentsRequestSchema),
   asyncHandler(getAudienceSegmentsForCurrentUser),
 );
 
 audienceRouter.get(
   "/cohorts",
-  authenticate,
   validateRequest(getAudienceCohortsRequestSchema),
   asyncHandler(getAudienceCohortsForCurrentUser),
 );
 
 audienceRouter.get(
   "/users",
-  authenticate,
   validateRequest(getAudienceUsersRequestSchema),
   asyncHandler(getAudienceUsersForCurrentUser),
 );
 
 audienceRouter.get(
   "/insights",
-  authenticate,
   validateRequest(getAudienceInsightsRequestSchema),
   asyncHandler(getAudienceInsightsForCurrentUser),
 );
 
 audienceRouter.get(
   "/engagement-histogram",
-  authenticate,
   validateRequest(getAudienceEngagementHistogramRequestSchema),
   asyncHandler(getAudienceEngagementHistogramForCurrentUser),
 );

@@ -1,11 +1,26 @@
 import { model, Schema, type InferSchemaType } from "mongoose";
 
+import { env } from "../../config/env";
+
 export const USER_TYPES = ["normal", "superadmin"] as const;
 export type UserType = (typeof USER_TYPES)[number];
 export const AUTH_TYPES = ["email", "google"] as const;
 export type AuthType = (typeof AUTH_TYPES)[number];
 export const SUBSCRIPTION_TYPES = ["free", "pro"] as const;
 export type SubscriptionType = (typeof SUBSCRIPTION_TYPES)[number];
+
+export const SUBSCRIPTION_STATUSES = [
+  "created",
+  "authenticated",
+  "active",
+  "pending",
+  "halted",
+  "paused",
+  "cancelled",
+  "completed",
+  "expired",
+] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
 const userSchema = new Schema(
   {
@@ -94,6 +109,24 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    razorpayCustomerId: {
+      type: String,
+      default: null,
+      trim: true,
+      sparse: true,
+      unique: true,
+    },
+    razorpaySubscriptionId: {
+      type: String,
+      default: null,
+      trim: true,
+      sparse: true,
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: SUBSCRIPTION_STATUSES,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -108,6 +141,11 @@ type SubscriptionStatusSource = Pick<
   | "isLifetimeSubscription"
   | "isSubscriptionActive"
 >;
+
+const getEffectivePeriodEnd = (subscriptionEndDate: Date): Date => {
+  const graceWindowMs = env.BILLING_GRACE_PERIOD_HOURS * 60 * 60 * 1000;
+  return new Date(subscriptionEndDate.getTime() + graceWindowMs);
+};
 
 const getComputedSubscriptionStatus = (
   user: SubscriptionStatusSource,
@@ -129,7 +167,7 @@ const getComputedSubscriptionStatus = (
   if (hasSubscriptionStartDate && hasSubscriptionEndDate) {
     return (
       currentDate >= subscriptionStartDate! &&
-      currentDate <= subscriptionEndDate!
+      currentDate <= getEffectivePeriodEnd(subscriptionEndDate!)
     );
   }
 
@@ -138,7 +176,7 @@ const getComputedSubscriptionStatus = (
   }
 
   if (hasSubscriptionEndDate) {
-    return currentDate <= subscriptionEndDate!;
+    return currentDate <= getEffectivePeriodEnd(subscriptionEndDate!);
   }
 
   return false;

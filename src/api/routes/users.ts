@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  getCurrentUserPlan,
   getCurrentUserProfile,
   updateCurrentUserPassword,
 } from "../controllers/users.controller";
@@ -15,6 +16,12 @@ router.get(
   "/me",
   asyncHandler(authenticate),
   asyncHandler(getCurrentUserProfile),
+);
+
+router.get(
+  "/me/plan",
+  asyncHandler(authenticate),
+  asyncHandler(getCurrentUserPlan),
 );
 
 router.post(

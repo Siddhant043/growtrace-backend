@@ -5,26 +5,19 @@ import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.mo
 import { CampaignMetricsDailyModel } from "../api/models/campaignMetricsDaily.model";
 import { LinkModel, type LinkPlatform } from "../api/models/link.model";
 import {
-  ENGAGEMENT_SCROLL_WEIGHT,
-  ENGAGEMENT_TIME_WEIGHT,
-} from "../api/constants/engagement";
-import {
   resolveDateRange,
   type DateRangeInput,
   type ResolvedDateRange,
 } from "./dateRange.utils";
+import {
+  buildRangeRollupGroupStage,
+  computeEngagementMetricsSummaryFromRollup,
+  type AggregatedRangeRollupRow,
+  type EngagementMetricsSummary,
+} from "./metricsRollup.utils";
 
 export type { DateRangeInput, ResolvedDateRange } from "./dateRange.utils";
-
-export type EngagementMetricsSummary = {
-  totalSessions: number;
-  bounceSessions: number;
-  engagedSessions: number;
-  avgDuration: number;
-  avgScrollDepth: number;
-  bounceRate: number;
-  engagementScore: number;
-};
+export type { EngagementMetricsSummary } from "./metricsRollup.utils";
 
 export type EngagementMetricsRangeResponse = ResolvedDateRange &
   EngagementMetricsSummary;
@@ -44,60 +37,6 @@ export type LinkMetricsListResponse = ResolvedDateRange & {
   };
   items: LinkMetricsListItem[];
 };
-
-const buildEmptyMetricsSummary = (): EngagementMetricsSummary => ({
-  totalSessions: 0,
-  bounceSessions: 0,
-  engagedSessions: 0,
-  avgDuration: 0,
-  avgScrollDepth: 0,
-  bounceRate: 0,
-  engagementScore: 0,
-});
-
-type AggregatedRangeRollupRow = {
-  totalSessions: number;
-  bounceSessions: number;
-  engagedSessions: number;
-  totalDuration: number;
-  totalScrollDepth: number;
-};
-
-const computeMetricsSummaryFromRollup = (
-  rollupRow: AggregatedRangeRollupRow | null,
-): EngagementMetricsSummary => {
-  if (!rollupRow || rollupRow.totalSessions === 0) {
-    return buildEmptyMetricsSummary();
-  }
-
-  const avgDuration = rollupRow.totalDuration / rollupRow.totalSessions;
-  const avgScrollDepth = rollupRow.totalScrollDepth / rollupRow.totalSessions;
-  const bounceRate = rollupRow.bounceSessions / rollupRow.totalSessions;
-  const engagementScore =
-    ENGAGEMENT_TIME_WEIGHT * avgDuration +
-    ENGAGEMENT_SCROLL_WEIGHT * avgScrollDepth;
-
-  return {
-    totalSessions: rollupRow.totalSessions,
-    bounceSessions: rollupRow.bounceSessions,
-    engagedSessions: rollupRow.engagedSessions,
-    avgDuration,
-    avgScrollDepth,
-    bounceRate,
-    engagementScore,
-  };
-};
-
-const buildRangeRollupGroupStage = () => ({
-  $group: {
-    _id: null,
-    totalSessions: { $sum: "$totalSessions" },
-    bounceSessions: { $sum: "$bounceSessions" },
-    engagedSessions: { $sum: "$engagedSessions" },
-    totalDuration: { $sum: "$totalDuration" },
-    totalScrollDepth: { $sum: "$totalScrollDepth" },
-  },
-});
 
 export const getLinkMetricsForRange = async (
   userId: string,
@@ -121,7 +60,9 @@ export const getLinkMetricsForRange = async (
   return {
     fromDate,
     toDate,
-    ...computeMetricsSummaryFromRollup(aggregatedRollupRows[0] ?? null),
+    ...computeEngagementMetricsSummaryFromRollup(
+      aggregatedRollupRows[0] ?? null,
+    ),
   };
 };
 
@@ -147,7 +88,9 @@ export const getPlatformMetricsForRange = async (
   return {
     fromDate,
     toDate,
-    ...computeMetricsSummaryFromRollup(aggregatedRollupRows[0] ?? null),
+    ...computeEngagementMetricsSummaryFromRollup(
+      aggregatedRollupRows[0] ?? null,
+    ),
   };
 };
 
@@ -173,7 +116,9 @@ export const getCampaignMetricsForRange = async (
   return {
     fromDate,
     toDate,
-    ...computeMetricsSummaryFromRollup(aggregatedRollupRows[0] ?? null),
+    ...computeEngagementMetricsSummaryFromRollup(
+      aggregatedRollupRows[0] ?? null,
+    ),
   };
 };
 
@@ -254,7 +199,7 @@ export const listLinkMetricsForRange = async (
   const items: LinkMetricsListItem[] = aggregatedLinkRollups.map(
     (rollupRow) => {
       const linkDocument = linkDocumentByLinkId.get(rollupRow._id.toString());
-      const summary = computeMetricsSummaryFromRollup(rollupRow);
+      const summary = computeEngagementMetricsSummaryFromRollup(rollupRow);
 
       return {
         linkId: rollupRow._id.toString(),

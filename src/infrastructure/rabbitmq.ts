@@ -1,21 +1,103 @@
-import { connect, type RabbitMQConnection } from "amqplib";
+import amqp, { type Channel, type ChannelModel } from "amqplib";
 
 import { env } from "../config/env";
 
-let rabbitMQConnection: RabbitMQConnection | null = null;
+const ANALYTICS_EXCHANGE_NAME = "analytics_exchange" as const;
+const ANALYTICS_EXCHANGE_TYPE = "topic" as const;
+export const ANALYTICS_INSIGHTS_ROUTING_KEY = "generate_insights" as const;
 
-const rabbitMQConnectionUrl =
+let cachedRabbitMqConnection: ChannelModel | null = null;
+let cachedRabbitMqChannel: Channel | null = null;
+let analyticsExchangeAssertedFlag = false;
+
+const buildRabbitMqConnectionUrl = (): string =>
   env.RABBITMQ_URL ||
-  `amqp://${encodeURIComponent(env.RABBITMQ_DEFAULT_USER)}:${encodeURIComponent(env.RABBITMQ_DEFAULT_PASS)}@${env.RABBITMQ_HOST}:${env.RABBITMQ_PORT}`;
+  `amqp://${encodeURIComponent(env.RABBITMQ_DEFAULT_USER)}:${encodeURIComponent(
+    env.RABBITMQ_DEFAULT_PASS,
+  )}@${env.RABBITMQ_HOST}:${env.RABBITMQ_PORT}`;
 
-export const connectToRabbitMQ = async (): Promise<RabbitMQConnection> => {
-  if (rabbitMQConnection) {
-    return rabbitMQConnection;
+export const connectToRabbitMQ = async (): Promise<ChannelModel> => {
+  if (cachedRabbitMqConnection) {
+    return cachedRabbitMqConnection;
   }
 
-  rabbitMQConnection = await connect(rabbitMQConnectionUrl);
-  return rabbitMQConnection;
+  cachedRabbitMqConnection = await amqp.connect(buildRabbitMqConnectionUrl());
+
+  cachedRabbitMqConnection.on("error", (connectionError: unknown) => {
+    console.error("[infrastructure.rabbitmq] connection error", {
+      error:
+        connectionError instanceof Error
+          ? connectionError.message
+          : String(connectionError),
+    });
+  });
+
+  cachedRabbitMqConnection.on("close", () => {
+    console.warn("[infrastructure.rabbitmq] connection closed");
+    cachedRabbitMqConnection = null;
+    cachedRabbitMqChannel = null;
+    analyticsExchangeAssertedFlag = false;
+  });
+
+  return cachedRabbitMqConnection;
 };
 
-export const getRabbitMQConnection = (): RabbitMQConnection | null =>
-  rabbitMQConnection;
+export const getRabbitMQConnection = (): ChannelModel | null =>
+  cachedRabbitMqConnection;
+
+const getRabbitMqPublisherChannel = async (): Promise<Channel> => {
+  if (cachedRabbitMqChannel) {
+    return cachedRabbitMqChannel;
+  }
+  const connection = await connectToRabbitMQ();
+  cachedRabbitMqChannel = await connection.createChannel();
+
+  cachedRabbitMqChannel.on("error", (channelError: unknown) => {
+    console.error("[infrastructure.rabbitmq] channel error", {
+      error:
+        channelError instanceof Error
+          ? channelError.message
+          : String(channelError),
+    });
+  });
+
+  cachedRabbitMqChannel.on("close", () => {
+    console.warn("[infrastructure.rabbitmq] channel closed");
+    cachedRabbitMqChannel = null;
+    analyticsExchangeAssertedFlag = false;
+  });
+
+  return cachedRabbitMqChannel;
+};
+
+const ensureAnalyticsExchangeAsserted = async (
+  channel: Channel,
+): Promise<void> => {
+  if (analyticsExchangeAssertedFlag) return;
+  await channel.assertExchange(
+    ANALYTICS_EXCHANGE_NAME,
+    ANALYTICS_EXCHANGE_TYPE,
+    { durable: true },
+  );
+  analyticsExchangeAssertedFlag = true;
+};
+
+export const publishToAnalyticsExchange = async (
+  routingKey: string,
+  payload: Record<string, unknown>,
+): Promise<boolean> => {
+  const channel = await getRabbitMqPublisherChannel();
+  await ensureAnalyticsExchangeAsserted(channel);
+
+  const serializedBuffer = Buffer.from(JSON.stringify(payload), "utf-8");
+  return channel.publish(
+    ANALYTICS_EXCHANGE_NAME,
+    routingKey,
+    serializedBuffer,
+    {
+      persistent: true,
+      contentType: "application/json",
+      timestamp: Date.now(),
+    },
+  );
+};

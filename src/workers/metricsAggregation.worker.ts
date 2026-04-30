@@ -5,6 +5,7 @@ import {
   METRICS_AGGREGATION_SCHEDULER_IDS,
   type MetricsAggregationJobPayload,
 } from "../infrastructure/queue";
+import { publishSnapshotsForActiveUsers } from "../services/insightsPublisher.service";
 import {
   aggregateAllScopesForDate,
   getCurrentUtcDateString,
@@ -40,6 +41,34 @@ export const processMetricsAggregationJob = async (
       `campaignRows=${aggregationSummary.campaignRowsUpserted} ` +
       `durationMs=${aggregationDurationMs}`,
   );
+
+  // Fire-and-forget: failures here must not fail the aggregation job. Each
+  // per-user publish wraps its own error inside `publishSnapshotsForActiveUsers`.
+  try {
+    const insightsPublishStartedAt = Date.now();
+    const insightsPublishSummary =
+      await publishSnapshotsForActiveUsers(targetDate);
+    const insightsPublishDurationMs = Date.now() - insightsPublishStartedAt;
+
+    console.info(
+      `[metricsAggregation.worker] insightsPublish ` +
+        `attempted=${insightsPublishSummary.attemptedUserCount} ` +
+        `published=${insightsPublishSummary.publishedUserCount} ` +
+        `failed=${insightsPublishSummary.failedUserCount} ` +
+        `durationMs=${insightsPublishDurationMs}`,
+    );
+  } catch (insightsPublishError) {
+    console.error(
+      "[metricsAggregation.worker] insightsPublish bulk error (non-fatal)",
+      {
+        date: targetDate,
+        error:
+          insightsPublishError instanceof Error
+            ? insightsPublishError.message
+            : String(insightsPublishError),
+      },
+    );
+  }
 };
 
 export const startMetricsAggregationWorker =

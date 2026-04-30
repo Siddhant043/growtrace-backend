@@ -2,6 +2,7 @@ import type { Job, Worker } from "bullmq";
 
 import {
   createAudienceAggregationWorker,
+  enqueuePerUserAlertsDetectionJob,
   type AudienceAggregationJobPayload,
 } from "../infrastructure/queue";
 import {
@@ -54,6 +55,25 @@ const fireAndForgetSnapshotPublishForUser = async (
   }
 };
 
+const fireAndForgetAlertDetectionEnqueueForUser = async (
+  activeUserId: string,
+): Promise<void> => {
+  try {
+    await enqueuePerUserAlertsDetectionJob(activeUserId, "post-audience");
+  } catch (enqueueError) {
+    console.error(
+      "[audienceAggregation.worker] alerts detection enqueue failed (non-fatal)",
+      {
+        userId: activeUserId,
+        error:
+          enqueueError instanceof Error
+            ? enqueueError.message
+            : String(enqueueError),
+      },
+    );
+  }
+};
+
 export const processAudienceAggregationJob = async (
   job: Job<AudienceAggregationJobPayload>,
 ): Promise<AudienceAggregationRunSummary> => {
@@ -75,6 +95,7 @@ export const processAudienceAggregationJob = async (
       succeededUserCount += 1;
 
       void fireAndForgetSnapshotPublishForUser(activeUserId);
+      void fireAndForgetAlertDetectionEnqueueForUser(activeUserId);
     } catch (perUserError) {
       failedUserCount += 1;
       console.error("[audienceAggregation.worker] per-user aggregation failed", {

@@ -3,6 +3,8 @@ import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { ExpressAdapter } from "@bull-board/express";
 
 import {
+  getAlertsDetectionQueue,
+  getAlertsDispatchQueue,
   getAttributionQueue,
   getAudienceAggregationQueue,
   getBehaviorEventsQueue,
@@ -25,6 +27,8 @@ export const createBullBoardServerAdapter = (): ExpressAdapter => {
       new BullMQAdapter(getWeeklyReportsQueue()),
       new BullMQAdapter(getAttributionQueue()),
       new BullMQAdapter(getAudienceAggregationQueue()),
+      new BullMQAdapter(getAlertsDetectionQueue()),
+      new BullMQAdapter(getAlertsDispatchQueue()),
     ],
     serverAdapter: expressAdapter,
   });

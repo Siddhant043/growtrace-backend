@@ -10,6 +10,8 @@ export const WEEKLY_REPORTS_QUEUE_NAME = "weekly-reports";
 export const ATTRIBUTION_QUEUE_NAME = "attribution";
 export const ATTRIBUTION_TOUCHPOINT_JOB_NAME = "ingest-touchpoint";
 export const AUDIENCE_AGGREGATION_QUEUE_NAME = "audienceAggregation";
+export const ALERTS_DETECTION_QUEUE_NAME = "alertsDetection";
+export const ALERTS_DISPATCH_QUEUE_NAME = "alertsDispatch";
 
 export const WEEKLY_REPORTS_PRODUCER_JOB_NAME = "produce-weekly-reports";
 export const WEEKLY_REPORTS_USER_JOB_NAME = "generate-user-weekly-report";
@@ -459,6 +461,185 @@ export const scheduleRecurringAudienceAggregation = async (
       data: {
         schedulerId: AUDIENCE_AGGREGATION_SCHEDULER_IDS.rollup,
       },
+    },
+  );
+};
+
+export const ALERTS_DETECTION_SCHEDULER_IDS = {
+  hourly: "alerts-detection:hourly",
+  dailySummary: "alerts-detection:daily-summary",
+} as const;
+
+export type AlertsDetectionSchedulerId =
+  (typeof ALERTS_DETECTION_SCHEDULER_IDS)[keyof typeof ALERTS_DETECTION_SCHEDULER_IDS];
+
+export type AlertsDetectionReason =
+  | "cron-hourly"
+  | "cron-daily"
+  | "post-metrics"
+  | "post-audience"
+  | "manual";
+
+export interface AlertsDetectionJobPayload {
+  userId: string | null;
+  reason: AlertsDetectionReason;
+  schedulerId?: AlertsDetectionSchedulerId | null;
+}
+
+export type AlertsDispatchAlertType =
+  | "engagement_drop"
+  | "traffic_spike"
+  | "top_link";
+
+export interface AlertsDispatchJobPayload {
+  userId: string;
+  type: AlertsDispatchAlertType;
+  headline: string;
+  message: string;
+  metadata: Record<string, string | number | boolean | null>;
+  dedupeKey: string;
+  deepLinkPath: string;
+  occurredAtMs: number;
+  source: "rule" | "ai";
+}
+
+let cachedAlertsDetectionQueue: Queue<AlertsDetectionJobPayload> | null = null;
+
+export const getAlertsDetectionQueue =
+  (): Queue<AlertsDetectionJobPayload> => {
+    if (cachedAlertsDetectionQueue) {
+      return cachedAlertsDetectionQueue;
+    }
+
+    cachedAlertsDetectionQueue = new Queue<AlertsDetectionJobPayload>(
+      ALERTS_DETECTION_QUEUE_NAME,
+      {
+        connection: getBullmqRedisConnection(),
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: "exponential", delay: 1000 },
+          removeOnComplete: { age: 60 * 60 * 6, count: 500 },
+          removeOnFail: { age: 60 * 60 * 24 * 7 },
+        },
+      },
+    );
+
+    return cachedAlertsDetectionQueue;
+  };
+
+export const createAlertsDetectionWorker = (
+  processor: Processor<AlertsDetectionJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<AlertsDetectionJobPayload> => {
+  return new Worker<AlertsDetectionJobPayload>(
+    ALERTS_DETECTION_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency:
+        workerOptions.concurrency ?? env.ALERTS_DETECTION_WORKER_CONCURRENCY,
+      ...workerOptions,
+    },
+  );
+};
+
+let cachedAlertsDispatchQueue: Queue<AlertsDispatchJobPayload> | null = null;
+
+export const getAlertsDispatchQueue = (): Queue<AlertsDispatchJobPayload> => {
+  if (cachedAlertsDispatchQueue) {
+    return cachedAlertsDispatchQueue;
+  }
+
+  cachedAlertsDispatchQueue = new Queue<AlertsDispatchJobPayload>(
+    ALERTS_DISPATCH_QUEUE_NAME,
+    {
+      connection: getBullmqRedisConnection(),
+      defaultJobOptions: {
+        attempts: 5,
+        backoff: { type: "exponential", delay: 30_000 },
+        removeOnComplete: { age: 60 * 60 * 24 * 3, count: 5000 },
+        removeOnFail: { age: 60 * 60 * 24 * 14 },
+      },
+    },
+  );
+
+  return cachedAlertsDispatchQueue;
+};
+
+export const createAlertsDispatchWorker = (
+  processor: Processor<AlertsDispatchJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<AlertsDispatchJobPayload> => {
+  return new Worker<AlertsDispatchJobPayload>(
+    ALERTS_DISPATCH_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency:
+        workerOptions.concurrency ?? env.ALERTS_DISPATCH_WORKER_CONCURRENCY,
+      ...workerOptions,
+    },
+  );
+};
+
+export const scheduleRecurringAlertsDetection = async (): Promise<void> => {
+  const alertsDetectionQueue = getAlertsDetectionQueue();
+
+  await Promise.all([
+    alertsDetectionQueue.upsertJobScheduler(
+      ALERTS_DETECTION_SCHEDULER_IDS.hourly,
+      { pattern: env.ALERTS_DETECTION_CRON_HOURLY },
+      {
+        name: ALERTS_DETECTION_SCHEDULER_IDS.hourly,
+        data: {
+          userId: null,
+          reason: "cron-hourly",
+          schedulerId: ALERTS_DETECTION_SCHEDULER_IDS.hourly,
+        },
+      },
+    ),
+    alertsDetectionQueue.upsertJobScheduler(
+      ALERTS_DETECTION_SCHEDULER_IDS.dailySummary,
+      { pattern: env.ALERTS_DETECTION_CRON_DAILY },
+      {
+        name: ALERTS_DETECTION_SCHEDULER_IDS.dailySummary,
+        data: {
+          userId: null,
+          reason: "cron-daily",
+          schedulerId: ALERTS_DETECTION_SCHEDULER_IDS.dailySummary,
+        },
+      },
+    ),
+  ]);
+};
+
+const ALERTS_HOUR_BUCKET_MS = 60 * 60 * 1000;
+
+const computeCurrentAlertsHourBucket = (): number =>
+  Math.floor(Date.now() / ALERTS_HOUR_BUCKET_MS);
+
+export const buildAlertsDetectionJobId = (
+  userId: string,
+  reason: AlertsDetectionReason,
+): string => {
+  const hourBucket = computeCurrentAlertsHourBucket();
+  return `det:${userId}:${reason}:${hourBucket}`;
+};
+
+export const enqueuePerUserAlertsDetectionJob = async (
+  userId: string,
+  reason: AlertsDetectionReason,
+): Promise<void> => {
+  const alertsDetectionQueue = getAlertsDetectionQueue();
+  await alertsDetectionQueue.add(
+    "detect-user",
+    {
+      userId,
+      reason,
+      schedulerId: null,
+    },
+    {
+      jobId: buildAlertsDetectionJobId(userId, reason),
     },
   );
 };

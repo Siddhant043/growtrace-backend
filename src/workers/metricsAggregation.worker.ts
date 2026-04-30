@@ -1,7 +1,10 @@
 import type { Job, Worker } from "bullmq";
+import { Types } from "mongoose";
 
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
 import {
   createMetricsAggregationWorker,
+  enqueuePerUserAlertsDetectionJob,
   METRICS_AGGREGATION_SCHEDULER_IDS,
   type MetricsAggregationJobPayload,
 } from "../infrastructure/queue";
@@ -69,6 +72,57 @@ export const processMetricsAggregationJob = async (
       },
     );
   }
+
+  try {
+    await enqueueAlertDetectionForActiveUsersOnDate(targetDate);
+  } catch (alertEnqueueError) {
+    console.error(
+      "[metricsAggregation.worker] alerts detection enqueue error (non-fatal)",
+      {
+        date: targetDate,
+        error:
+          alertEnqueueError instanceof Error
+            ? alertEnqueueError.message
+            : String(alertEnqueueError),
+      },
+    );
+  }
+};
+
+const enqueueAlertDetectionForActiveUsersOnDate = async (
+  targetDate: string,
+): Promise<void> => {
+  const distinctActiveUserIds = await LinkMetricsDailyModel.distinct("userId", {
+    date: targetDate,
+  });
+
+  if (distinctActiveUserIds.length === 0) {
+    return;
+  }
+
+  await Promise.all(
+    distinctActiveUserIds.map((rawUserId) => {
+      const normalizedUserId =
+        rawUserId instanceof Types.ObjectId
+          ? rawUserId.toHexString()
+          : String(rawUserId);
+      return enqueuePerUserAlertsDetectionJob(
+        normalizedUserId,
+        "post-metrics",
+      ).catch((perUserEnqueueError: unknown) => {
+        console.error(
+          "[metricsAggregation.worker] per-user alerts enqueue failed",
+          {
+            userId: normalizedUserId,
+            error:
+              perUserEnqueueError instanceof Error
+                ? perUserEnqueueError.message
+                : String(perUserEnqueueError),
+          },
+        );
+      });
+    }),
+  );
 };
 
 export const startMetricsAggregationWorker =

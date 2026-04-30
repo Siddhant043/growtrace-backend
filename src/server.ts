@@ -23,6 +23,7 @@ import {
   createBullBoardServerAdapter,
 } from "./infrastructure/bullBoard";
 import {
+  scheduleRecurringAlertsDetection,
   scheduleRecurringAudienceAggregation,
   scheduleRecurringFunnelAggregation,
   scheduleRecurringMetricsAggregation,
@@ -34,6 +35,8 @@ import { startFunnelAggregationWorker } from "./workers/funnelAggregation.worker
 import { startWeeklyReportsWorker } from "./workers/weeklyReports.worker";
 import { startAttributionWorker } from "./workers/attribution.worker";
 import { startAudienceAggregationWorker } from "./workers/audienceAggregation.worker";
+import { startAlertsDetectionWorker } from "./workers/alertsDetection.worker";
+import { startAlertsDispatchWorker } from "./workers/alertsDispatch.worker";
 
 const app = express();
 
@@ -182,6 +185,21 @@ const startServer = async (): Promise<void> => {
     `audienceAggregation rollup scheduled (cron='${env.AUDIENCE_AGGREGATION_CRON}', windowDays=${env.AUDIENCE_AGGREGATION_WINDOW_DAYS})`,
   );
 
+  const alertsDetectionWorker = startAlertsDetectionWorker();
+  console.log(
+    `alertsDetection worker running (env=${env.ENV}, pid=${process.pid}, concurrency=${env.ALERTS_DETECTION_WORKER_CONCURRENCY})`,
+  );
+
+  const alertsDispatchWorker = startAlertsDispatchWorker();
+  console.log(
+    `alertsDispatch worker running (env=${env.ENV}, pid=${process.pid}, concurrency=${env.ALERTS_DISPATCH_WORKER_CONCURRENCY})`,
+  );
+
+  await scheduleRecurringAlertsDetection();
+  console.log(
+    `alertsDetection schedules upserted (hourly='${env.ALERTS_DETECTION_CRON_HOURLY}', daily='${env.ALERTS_DETECTION_CRON_DAILY}')`,
+  );
+
   const httpServer = app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
     console.log(
@@ -200,6 +218,8 @@ const startServer = async (): Promise<void> => {
         weeklyReportsWorker.close(),
         attributionWorker.close(),
         audienceAggregationWorker.close(),
+        alertsDetectionWorker.close(),
+        alertsDispatchWorker.close(),
       ]);
     } finally {
       process.exit(0);

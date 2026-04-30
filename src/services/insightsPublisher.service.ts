@@ -20,10 +20,18 @@ export const publishUserAnalyticsSnapshot = async (
     windowDays,
   );
 
+  const audienceSnapshot = snapshotPayload.audienceSnapshot;
+  const hasAudienceSignal =
+    !!audienceSnapshot &&
+    (audienceSnapshot.segmentCounts.total > 0 ||
+      audienceSnapshot.cohorts.length > 0 ||
+      audienceSnapshot.topPlatformsByReturningUsers.length > 0);
+
   if (
     snapshotPayload.platformMetrics.length === 0 &&
     snapshotPayload.linkMetrics.length === 0 &&
-    snapshotPayload.trendMetrics.length === 0
+    snapshotPayload.trendMetrics.length === 0 &&
+    !hasAudienceSignal
   ) {
     console.info(
       "[insightsPublisher] empty snapshot for user; skipping publish",

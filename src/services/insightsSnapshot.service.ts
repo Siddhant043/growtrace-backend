@@ -4,6 +4,10 @@ import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
 import { LinkModel } from "../api/models/link.model";
 import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model";
 import { formatDateAsUtcIsoDate } from "../utils/dateBounds.utils";
+import {
+  getAudienceSegmentCounts,
+  getCohortMetrics,
+} from "./audience.read.service";
 
 const DEFAULT_SNAPSHOT_WINDOW_DAYS = 7;
 const TOP_LINK_LIMIT_PER_SNAPSHOT = 25;
@@ -30,6 +34,33 @@ type TrendMetricEntry = {
   engagementScore: number;
 };
 
+export type AudienceSegmentCountsSnapshot = {
+  total: number;
+  highEngagement: number;
+  lowEngagement: number;
+  returningUsers: number;
+};
+
+export type AudienceCohortSnapshotEntry = {
+  cohortDate: string;
+  primaryPlatform: string;
+  users: number;
+  returningUsers: number;
+  avgEngagement: number;
+};
+
+export type AudienceTopPlatformSnapshotEntry = {
+  platform: string;
+  returningUsers: number;
+  avgEngagement: number;
+};
+
+export type AudienceSnapshotPayload = {
+  segmentCounts: AudienceSegmentCountsSnapshot;
+  cohorts: AudienceCohortSnapshotEntry[];
+  topPlatformsByReturningUsers: AudienceTopPlatformSnapshotEntry[];
+};
+
 export type UserAnalyticsSnapshotPayload = {
   userId: string;
   asOfDate: string;
@@ -37,6 +68,7 @@ export type UserAnalyticsSnapshotPayload = {
   platformMetrics: PlatformMetricEntry[];
   linkMetrics: LinkMetricEntry[];
   trendMetrics: TrendMetricEntry[];
+  audienceSnapshot?: AudienceSnapshotPayload;
 };
 
 const computeRollingWindowStartDateString = (
@@ -211,6 +243,83 @@ const aggregateTrendMetricsForUser = async (
   }));
 };
 
+const AUDIENCE_COHORT_SNAPSHOT_WINDOW_DAYS = 14;
+const AUDIENCE_TOP_PLATFORMS_LIMIT = 5;
+
+const buildAudienceSnapshotForUser = async (
+  userId: string,
+  asOfDateIso: string,
+): Promise<AudienceSnapshotPayload> => {
+  const cohortWindowStartIso = computeRollingWindowStartDateString(
+    asOfDateIso,
+    AUDIENCE_COHORT_SNAPSHOT_WINDOW_DAYS,
+  );
+
+  const [audienceSegmentSummary, cohortRows] = await Promise.all([
+    getAudienceSegmentCounts(userId),
+    getCohortMetrics({
+      userId,
+      fromCohortDate: cohortWindowStartIso,
+      toCohortDate: asOfDateIso,
+      limit: 500,
+    }),
+  ]);
+
+  const cohorts: AudienceCohortSnapshotEntry[] = cohortRows.map((cohortRow) => ({
+    cohortDate: cohortRow.cohortDate,
+    primaryPlatform: cohortRow.primaryPlatform,
+    users: cohortRow.users,
+    returningUsers: cohortRow.returningUsers,
+    avgEngagement: cohortRow.avgEngagement,
+  }));
+
+  const platformAggregateMap = new Map<
+    string,
+    { returningUsersTotal: number; weightedEngagementSum: number; userTotal: number }
+  >();
+
+  for (const cohortRow of cohortRows) {
+    const platformKey = cohortRow.primaryPlatform || "unknown";
+    const existing = platformAggregateMap.get(platformKey) ?? {
+      returningUsersTotal: 0,
+      weightedEngagementSum: 0,
+      userTotal: 0,
+    };
+    existing.returningUsersTotal += cohortRow.returningUsers;
+    existing.weightedEngagementSum +=
+      cohortRow.avgEngagement * cohortRow.users;
+    existing.userTotal += cohortRow.users;
+    platformAggregateMap.set(platformKey, existing);
+  }
+
+  const topPlatformsByReturningUsers: AudienceTopPlatformSnapshotEntry[] =
+    Array.from(platformAggregateMap.entries())
+      .map(([platform, totals]) => ({
+        platform,
+        returningUsers: totals.returningUsersTotal,
+        avgEngagement:
+          totals.userTotal > 0
+            ? totals.weightedEngagementSum / totals.userTotal
+            : 0,
+      }))
+      .sort(
+        (firstEntry, secondEntry) =>
+          secondEntry.returningUsers - firstEntry.returningUsers,
+      )
+      .slice(0, AUDIENCE_TOP_PLATFORMS_LIMIT);
+
+  return {
+    segmentCounts: {
+      total: audienceSegmentSummary.total,
+      highEngagement: audienceSegmentSummary.highEngagement,
+      lowEngagement: audienceSegmentSummary.lowEngagement,
+      returningUsers: audienceSegmentSummary.returningUsers,
+    },
+    cohorts,
+    topPlatformsByReturningUsers,
+  };
+};
+
 export const buildUserAnalyticsSnapshot = async (
   userId: string,
   asOfDateIso: string,
@@ -222,19 +331,25 @@ export const buildUserAnalyticsSnapshot = async (
     windowDays,
   );
 
-  const [platformMetrics, linkMetrics, trendMetrics] = await Promise.all([
-    aggregatePlatformMetricsForUser(
-      userObjectId,
-      windowStartDateIso,
-      asOfDateIso,
-    ),
-    aggregateLinkMetricsForUser(userObjectId, windowStartDateIso, asOfDateIso),
-    aggregateTrendMetricsForUser(
-      userObjectId,
-      windowStartDateIso,
-      asOfDateIso,
-    ),
-  ]);
+  const [platformMetrics, linkMetrics, trendMetrics, audienceSnapshot] =
+    await Promise.all([
+      aggregatePlatformMetricsForUser(
+        userObjectId,
+        windowStartDateIso,
+        asOfDateIso,
+      ),
+      aggregateLinkMetricsForUser(
+        userObjectId,
+        windowStartDateIso,
+        asOfDateIso,
+      ),
+      aggregateTrendMetricsForUser(
+        userObjectId,
+        windowStartDateIso,
+        asOfDateIso,
+      ),
+      buildAudienceSnapshotForUser(userId, asOfDateIso),
+    ]);
 
   return {
     userId,
@@ -243,6 +358,7 @@ export const buildUserAnalyticsSnapshot = async (
     platformMetrics,
     linkMetrics,
     trendMetrics,
+    audienceSnapshot,
   };
 };
 

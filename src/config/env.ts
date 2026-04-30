@@ -76,6 +76,27 @@ const runtimeEnvironmentSchema = z.object({
     .min(1)
     .max(3650)
     .default(730),
+  AUDIENCE_AGGREGATION_WINDOW_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(365)
+    .default(30),
+  AUDIENCE_COHORT_WINDOW_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(365)
+    .default(90),
+  AUDIENCE_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(4),
+  AUDIENCE_HIGH_ENGAGEMENT_SCORE_MIN: z.coerce.number().min(0).default(50),
+  AUDIENCE_LOW_ENGAGEMENT_SCORE_MAX: z.coerce.number().min(0).default(20),
+  AUDIENCE_AGGREGATION_CRON: z.string().min(1).default("*/5 * * * *"),
 });
 
 const parsedRuntimeEnvironment = runtimeEnvironmentSchema.safeParse(

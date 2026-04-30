@@ -50,6 +50,19 @@ const persistBehaviorEvent = async (
   });
 };
 
+const resolveUserTrackingIdSetField = (
+  jobPayload: BehaviorEventJobPayload,
+): { userTrackingId: string } | Record<string, never> => {
+  if (
+    typeof jobPayload.userTrackingId === "string" &&
+    jobPayload.userTrackingId.trim().length > 0
+  ) {
+    return { userTrackingId: jobPayload.userTrackingId.trim() };
+  }
+
+  return {};
+};
+
 const upsertSessionForPageView = async (
   jobPayload: BehaviorEventJobPayload,
   eventTimestamp: Date,
@@ -70,6 +83,7 @@ const upsertSessionForPageView = async (
         ...(linkMetadataSummary.campaign
           ? { campaign: linkMetadataSummary.campaign }
           : {}),
+        ...resolveUserTrackingIdSetField(jobPayload),
       },
       $setOnInsert: {
         sessionId: jobPayload.sessionId,
@@ -104,7 +118,10 @@ const updateSessionForScroll = async (
     { sessionId: jobPayload.sessionId },
     {
       $max: { maxScrollDepth: measuredScrollDepth },
-      $set: { lastActivityAt: eventTimestamp },
+      $set: {
+        lastActivityAt: eventTimestamp,
+        ...resolveUserTrackingIdSetField(jobPayload),
+      },
     },
   );
 };
@@ -128,6 +145,7 @@ const updateSessionForExit = async (
       $set: {
         lastActivityAt: eventTimestamp,
         isBounce: computedIsBounce,
+        ...resolveUserTrackingIdSetField(jobPayload),
       },
     },
   );

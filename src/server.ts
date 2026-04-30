@@ -23,6 +23,7 @@ import {
   createBullBoardServerAdapter,
 } from "./infrastructure/bullBoard";
 import {
+  scheduleRecurringAudienceAggregation,
   scheduleRecurringFunnelAggregation,
   scheduleRecurringMetricsAggregation,
   scheduleRecurringWeeklyReportsProducer,
@@ -32,6 +33,7 @@ import { startMetricsAggregationWorker } from "./workers/metricsAggregation.work
 import { startFunnelAggregationWorker } from "./workers/funnelAggregation.worker";
 import { startWeeklyReportsWorker } from "./workers/weeklyReports.worker";
 import { startAttributionWorker } from "./workers/attribution.worker";
+import { startAudienceAggregationWorker } from "./workers/audienceAggregation.worker";
 
 const app = express();
 
@@ -170,6 +172,16 @@ const startServer = async (): Promise<void> => {
     `attribution worker running (env=${env.ENV}, pid=${process.pid}, concurrency=${env.ATTRIBUTION_WORKER_CONCURRENCY})`,
   );
 
+  const audienceAggregationWorker = startAudienceAggregationWorker();
+  console.log(
+    `audienceAggregation worker running (env=${env.ENV}, pid=${process.pid}, concurrency=${env.AUDIENCE_WORKER_CONCURRENCY})`,
+  );
+
+  await scheduleRecurringAudienceAggregation();
+  console.log(
+    `audienceAggregation rollup scheduled (cron='${env.AUDIENCE_AGGREGATION_CRON}', windowDays=${env.AUDIENCE_AGGREGATION_WINDOW_DAYS})`,
+  );
+
   const httpServer = app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
     console.log(
@@ -187,6 +199,7 @@ const startServer = async (): Promise<void> => {
         funnelAggregationWorker.close(),
         weeklyReportsWorker.close(),
         attributionWorker.close(),
+        audienceAggregationWorker.close(),
       ]);
     } finally {
       process.exit(0);

@@ -9,6 +9,7 @@ export const FUNNEL_AGGREGATION_QUEUE_NAME = "funnelAggregation";
 export const WEEKLY_REPORTS_QUEUE_NAME = "weekly-reports";
 export const ATTRIBUTION_QUEUE_NAME = "attribution";
 export const ATTRIBUTION_TOUCHPOINT_JOB_NAME = "ingest-touchpoint";
+export const AUDIENCE_AGGREGATION_QUEUE_NAME = "audienceAggregation";
 
 export const WEEKLY_REPORTS_PRODUCER_JOB_NAME = "produce-weekly-reports";
 export const WEEKLY_REPORTS_USER_JOB_NAME = "generate-user-weekly-report";
@@ -389,6 +390,75 @@ export const createAttributionWorker = (
       connection: getBullmqRedisConnection(),
       concurrency: workerOptions.concurrency ?? 8,
       ...workerOptions,
+    },
+  );
+};
+
+export const AUDIENCE_AGGREGATION_SCHEDULER_IDS = {
+  rollup: "audience-aggregation:rollup",
+} as const;
+
+export type AudienceAggregationSchedulerId =
+  (typeof AUDIENCE_AGGREGATION_SCHEDULER_IDS)[keyof typeof AUDIENCE_AGGREGATION_SCHEDULER_IDS];
+
+export interface AudienceAggregationJobPayload {
+  schedulerId: AudienceAggregationSchedulerId;
+}
+
+let cachedAudienceAggregationQueue: Queue<AudienceAggregationJobPayload> | null =
+  null;
+
+export const getAudienceAggregationQueue =
+  (): Queue<AudienceAggregationJobPayload> => {
+    if (cachedAudienceAggregationQueue) {
+      return cachedAudienceAggregationQueue;
+    }
+
+    cachedAudienceAggregationQueue = new Queue<AudienceAggregationJobPayload>(
+      AUDIENCE_AGGREGATION_QUEUE_NAME,
+      {
+        connection: getBullmqRedisConnection(),
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: "exponential", delay: 1000 },
+          removeOnComplete: { age: 3600, count: 200 },
+          removeOnFail: { age: 86400 },
+        },
+      },
+    );
+
+    return cachedAudienceAggregationQueue;
+  };
+
+export const createAudienceAggregationWorker = (
+  processor: Processor<AudienceAggregationJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<AudienceAggregationJobPayload> => {
+  return new Worker<AudienceAggregationJobPayload>(
+    AUDIENCE_AGGREGATION_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency:
+        workerOptions.concurrency ?? env.AUDIENCE_WORKER_CONCURRENCY,
+      ...workerOptions,
+    },
+  );
+};
+
+export const scheduleRecurringAudienceAggregation = async (
+  cronPattern: string = env.AUDIENCE_AGGREGATION_CRON,
+): Promise<void> => {
+  const audienceAggregationQueue = getAudienceAggregationQueue();
+
+  await audienceAggregationQueue.upsertJobScheduler(
+    AUDIENCE_AGGREGATION_SCHEDULER_IDS.rollup,
+    { pattern: cronPattern },
+    {
+      name: AUDIENCE_AGGREGATION_SCHEDULER_IDS.rollup,
+      data: {
+        schedulerId: AUDIENCE_AGGREGATION_SCHEDULER_IDS.rollup,
+      },
     },
   );
 };

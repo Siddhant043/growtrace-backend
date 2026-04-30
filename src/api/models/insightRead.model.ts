@@ -5,6 +5,7 @@ export const INSIGHT_TYPES = [
   "content",
   "trend",
   "recommendation",
+  "audience",
 ] as const;
 
 export type InsightType = (typeof INSIGHT_TYPES)[number];

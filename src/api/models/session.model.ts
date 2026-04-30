@@ -99,6 +99,11 @@ const sessionSchema = new Schema(
       trim: true,
       default: "",
     },
+    userTrackingId: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -109,6 +114,7 @@ const sessionSchema = new Schema(
 sessionSchema.index({ userId: 1, lastActivityAt: -1 });
 sessionSchema.index({ userId: 1, createdAt: -1, platform: 1 });
 sessionSchema.index({ userId: 1, createdAt: -1, campaign: 1 });
+sessionSchema.index({ userId: 1, userTrackingId: 1, createdAt: -1 });
 
 export type SessionDocument = InferSchemaType<typeof sessionSchema> & {
   _id: Types.ObjectId;

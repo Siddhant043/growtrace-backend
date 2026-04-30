@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
 import { LinkModel } from "../api/models/link.model";
 import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model";
-import { formatDateAsUtcIsoDate } from "./dateBounds.utils";
+import { formatDateAsUtcIsoDate } from "../utils/dateBounds.utils";
 
 const DEFAULT_SNAPSHOT_WINDOW_DAYS = 7;
 const TOP_LINK_LIMIT_PER_SNAPSHOT = 25;

@@ -60,6 +60,11 @@ const clickEventSchema = new Schema(
       trim: true,
       default: "",
     },
+    userTrackingId: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   {
     versionKey: false,
@@ -71,6 +76,7 @@ clickEventSchema.index({ userId: 1, timestamp: -1 });
 clickEventSchema.index({ platform: 1 });
 clickEventSchema.index({ userId: 1, timestamp: -1, platform: 1 });
 clickEventSchema.index({ userId: 1, timestamp: -1, campaign: 1 });
+clickEventSchema.index({ userTrackingId: 1, timestamp: -1 });
 
 export type ClickEventDocument = InferSchemaType<typeof clickEventSchema> & {
   _id: Types.ObjectId;

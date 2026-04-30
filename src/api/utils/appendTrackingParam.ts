@@ -1,5 +1,6 @@
 const TRACKING_LINK_QUERY_PARAM_NAME = "gt_link_id";
 const TRACKING_CLICK_TIMESTAMP_QUERY_PARAM_NAME = "gt_click_ts";
+const TRACKING_USER_ID_QUERY_PARAM_NAME = "gt_uid";
 
 const isAbsoluteHttpUrl = (candidateUrl: string): boolean =>
   candidateUrl.startsWith("http://") || candidateUrl.startsWith("https://");
@@ -8,6 +9,7 @@ export const appendTrackingParam = (
   destinationUrl: string,
   linkIdValue: string,
   clickTimestampMs?: number,
+  userTrackingIdValue?: string,
 ): string => {
   const trimmedDestinationUrl = destinationUrl.trim();
   const trimmedLinkIdValue = linkIdValue.trim();
@@ -35,6 +37,16 @@ export const appendTrackingParam = (
       parsedDestinationUrl.searchParams.set(
         TRACKING_CLICK_TIMESTAMP_QUERY_PARAM_NAME,
         String(Math.floor(clickTimestampMs)),
+      );
+    }
+
+    if (
+      typeof userTrackingIdValue === "string" &&
+      userTrackingIdValue.trim().length > 0
+    ) {
+      parsedDestinationUrl.searchParams.set(
+        TRACKING_USER_ID_QUERY_PARAM_NAME,
+        userTrackingIdValue.trim(),
       );
     }
 

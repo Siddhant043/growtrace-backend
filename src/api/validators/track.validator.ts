@@ -43,6 +43,16 @@ const trackEventBodySchema = z.object({
     ),
   isReturning: z.boolean().optional().default(false),
   firstClickAt: z.number().int().nonnegative().optional(),
+  userTrackingId: z
+    .string()
+    .trim()
+    .min(8)
+    .max(64)
+    .optional()
+    .nullable()
+    .transform((trackingIdValue) =>
+      trackingIdValue && trackingIdValue.length > 0 ? trackingIdValue : null,
+    ),
 });
 
 export const trackEventRequestSchema = z.object({

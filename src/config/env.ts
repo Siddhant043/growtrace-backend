@@ -51,6 +51,31 @@ const runtimeEnvironmentSchema = z.object({
     .string()
     .email("WEEKLY_REPORTS_EMAIL_FROM must be a valid email address")
     .optional(),
+  ATTRIBUTION_JOURNEY_WINDOW_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(180)
+    .default(7),
+  ATTRIBUTION_TOUCHPOINT_TTL_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3650)
+    .default(90),
+  ATTRIBUTION_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(8),
+  ATTRIBUTION_USER_COOKIE_NAME: z.string().min(1).default("gt_uid"),
+  ATTRIBUTION_USER_COOKIE_MAX_AGE_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3650)
+    .default(730),
 });
 
 const parsedRuntimeEnvironment = runtimeEnvironmentSchema.safeParse(

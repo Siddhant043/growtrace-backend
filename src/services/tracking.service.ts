@@ -24,6 +24,7 @@ export const logClick = async (
   link: TrackingLinkPayload,
   request: Request,
   clickTimestamp: Date = new Date(),
+  userTrackingId: string | null = null,
 ): Promise<void> => {
   const ipAddress = resolveClientIpAddress(request);
   const userAgentHeader = request.get("user-agent");
@@ -42,5 +43,6 @@ export const logClick = async (
     deviceType,
     browser,
     referrer: referrerHeader,
+    userTrackingId,
   });
 };

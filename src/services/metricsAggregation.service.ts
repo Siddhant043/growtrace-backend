@@ -22,13 +22,13 @@ import {
   ENGAGEMENT_TIME_WEIGHT,
   SESSION_DURATION_CAP_SECONDS,
 } from "../api/constants/engagement";
-import { computeDayBoundsUtc } from "./dateBounds.utils";
+import { computeDayBoundsUtc } from "../utils/dateBounds.utils";
 
 export {
   formatDateAsUtcIsoDate,
   getCurrentUtcDateString,
   getPreviousUtcDateString,
-} from "./dateBounds.utils";
+} from "../utils/dateBounds.utils";
 
 type AggregatedMetricRow = {
   totalSessions: number;

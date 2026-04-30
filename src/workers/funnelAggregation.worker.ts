@@ -9,7 +9,7 @@ import { aggregateAllFunnelScopesForDate } from "../services/funnelAggregation.s
 import {
   getCurrentUtcDateString,
   getPreviousUtcDateString,
-} from "../services/dateBounds.utils";
+} from "../utils/dateBounds.utils";
 
 const resolveTargetDateForJob = (
   jobPayload: FunnelAggregationJobPayload,

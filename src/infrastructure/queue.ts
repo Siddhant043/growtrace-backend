@@ -7,6 +7,8 @@ export const BEHAVIOR_EVENTS_QUEUE_NAME = "behaviorEvents";
 export const METRICS_AGGREGATION_QUEUE_NAME = "metricsAggregation";
 export const FUNNEL_AGGREGATION_QUEUE_NAME = "funnelAggregation";
 export const WEEKLY_REPORTS_QUEUE_NAME = "weekly-reports";
+export const ATTRIBUTION_QUEUE_NAME = "attribution";
+export const ATTRIBUTION_TOUCHPOINT_JOB_NAME = "ingest-touchpoint";
 
 export const WEEKLY_REPORTS_PRODUCER_JOB_NAME = "produce-weekly-reports";
 export const WEEKLY_REPORTS_USER_JOB_NAME = "generate-user-weekly-report";
@@ -42,6 +44,7 @@ export interface BehaviorEventJobPayload {
   userId: string;
   linkId: string | null;
   sessionId: string;
+  userTrackingId: string | null;
   eventType: string;
   clientTimestamp: number;
   page: {
@@ -331,4 +334,61 @@ export const scheduleRecurringFunnelAggregation = async (): Promise<void> => {
       },
     ),
   ]);
+};
+
+export type AttributionTouchpointType =
+  | "click"
+  | "visit"
+  | "engaged"
+  | "conversion";
+
+export interface AttributionTouchpointJobPayload {
+  userTrackingId: string;
+  userId: string;
+  sessionId: string | null;
+  linkId: string | null;
+  platform: string | null;
+  campaign: string | null;
+  type: AttributionTouchpointType;
+  timestampMs: number;
+  userAgent?: string | null;
+}
+
+let cachedAttributionQueue: Queue<AttributionTouchpointJobPayload> | null = null;
+
+export const getAttributionQueue =
+  (): Queue<AttributionTouchpointJobPayload> => {
+    if (cachedAttributionQueue) {
+      return cachedAttributionQueue;
+    }
+
+    cachedAttributionQueue = new Queue<AttributionTouchpointJobPayload>(
+      ATTRIBUTION_QUEUE_NAME,
+      {
+        connection: getBullmqRedisConnection(),
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: "exponential", delay: 1000 },
+          removeOnComplete: { age: 60 * 60 * 24 * 7, count: 5000 },
+          removeOnFail: { age: 60 * 60 * 24 * 30 },
+        },
+      },
+    );
+
+    return cachedAttributionQueue;
+  };
+
+export const createAttributionWorker = (
+  processor: Processor<AttributionTouchpointJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<AttributionTouchpointJobPayload> => {
+  return new Worker<AttributionTouchpointJobPayload>(
+    ATTRIBUTION_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency: workerOptions.concurrency ?? 8,
+      ...workerOptions,
+    },
+  );
 };

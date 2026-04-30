@@ -8,9 +8,9 @@ import {
   resolveDateRange,
   type DateRangeInput,
   type ResolvedDateRange,
-} from "./dateRange.utils";
+} from "../utils/dateRange.utils";
 
-export type { DateRangeInput, ResolvedDateRange } from "./dateRange.utils";
+export type { DateRangeInput, ResolvedDateRange } from "../utils/dateRange.utils";
 
 export type FunnelStageCounts = {
   clicks: number;

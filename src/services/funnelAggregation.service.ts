@@ -21,7 +21,7 @@ import {
   ENGAGED_SCROLL_DEPTH_THRESHOLD,
   SESSION_DURATION_CAP_SECONDS,
 } from "../api/constants/engagement";
-import { computeDayBoundsUtc } from "./dateBounds.utils";
+import { computeDayBoundsUtc } from "../utils/dateBounds.utils";
 
 type FunnelStageCounts = {
   clicks: number;

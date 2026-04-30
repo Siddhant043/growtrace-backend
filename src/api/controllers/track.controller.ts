@@ -6,10 +6,17 @@ import {
   enqueueBehaviorEvent,
   type BehaviorEventJobPayload,
 } from "../../infrastructure/queue";
+import { enqueueAttributionTouchpoint } from "../../services/attributionProducer.service";
+import {
+  mapBehaviorEventToAttributionTouchpointType,
+  type BehaviorEventForAttribution,
+} from "../../utils/attribution.eventMapper";
 import { UserModel } from "../models/user.model";
+import { LinkModel } from "../models/link.model";
 import { resolveClientIpAddress } from "../utils/resolveClientIpAddress";
 import { getCountryFromIP } from "../utils/getCountryFromIP";
 import { isLikelyBot } from "../utils/isLikelyBot";
+import { readUserTrackingIdFromRequest } from "../utils/userTrackingCookie";
 import type { TrackEventRequestBody } from "../validators/track.validator";
 
 const API_KEY_CACHE_PREFIX = "tracking:apiKey:";
@@ -92,11 +99,16 @@ export const ingestTrackingEvent = async (
   const ipAddress = resolveClientIpAddress(request);
   const country = await getCountryFromIP(ipAddress ?? undefined);
 
+  const cookieTrackingId = readUserTrackingIdFromRequest(request);
+  const resolvedUserTrackingId =
+    eventBody.userTrackingId ?? cookieTrackingId ?? null;
+
   const jobPayload: BehaviorEventJobPayload = {
     apiKey: eventBody.apiKey,
     userId: resolvedUserId,
     linkId: linkIdValueIfValid,
     sessionId: eventBody.sessionId,
+    userTrackingId: resolvedUserTrackingId,
     eventType: eventBody.eventType,
     clientTimestamp: eventBody.timestamp,
     page: {
@@ -125,5 +137,82 @@ export const ingestTrackingEvent = async (
     console.error("Failed to enqueue behavior event", enqueueError);
   });
 
+  if (resolvedUserTrackingId) {
+    void fanOutAttributionTouchpointForBehaviorEvent({
+      eventBody,
+      resolvedUserId,
+      resolvedUserTrackingId,
+      linkIdValueIfValid,
+      userAgentHeader,
+    }).catch((attributionError: unknown) => {
+      console.error("Failed to fan out attribution touchpoint", attributionError);
+    });
+  }
+
   respondAcknowledged(response);
+};
+
+interface FanOutAttributionParameters {
+  eventBody: TrackEventRequestBody;
+  resolvedUserId: string;
+  resolvedUserTrackingId: string;
+  linkIdValueIfValid: string | null;
+  userAgentHeader: string;
+}
+
+const fanOutAttributionTouchpointForBehaviorEvent = async ({
+  eventBody,
+  resolvedUserId,
+  resolvedUserTrackingId,
+  linkIdValueIfValid,
+  userAgentHeader,
+}: FanOutAttributionParameters): Promise<void> => {
+  const behaviorEventForMapper: BehaviorEventForAttribution = {
+    eventType: eventBody.eventType,
+    durationSeconds: eventBody.metrics.duration ?? null,
+    scrollDepthPercent: eventBody.metrics.scrollDepth ?? null,
+  };
+
+  const mappedTouchpointType = mapBehaviorEventToAttributionTouchpointType(
+    behaviorEventForMapper,
+  );
+
+  if (!mappedTouchpointType) {
+    return;
+  }
+
+  const linkPlatformAndCampaign = await resolveLinkContext(linkIdValueIfValid);
+
+  await enqueueAttributionTouchpoint({
+    userTrackingId: resolvedUserTrackingId,
+    userId: resolvedUserId,
+    sessionId: eventBody.sessionId,
+    linkId: linkIdValueIfValid,
+    platform: linkPlatformAndCampaign.platform,
+    campaign: linkPlatformAndCampaign.campaign,
+    type: mappedTouchpointType,
+    timestampMs: eventBody.timestamp,
+    userAgent: userAgentHeader,
+  });
+};
+
+const resolveLinkContext = async (
+  linkId: string | null,
+): Promise<{ platform: string | null; campaign: string | null }> => {
+  if (!linkId || !Types.ObjectId.isValid(linkId)) {
+    return { platform: null, campaign: null };
+  }
+
+  const linkDocument = await LinkModel.findById(linkId)
+    .select("platform campaign")
+    .lean();
+
+  if (!linkDocument) {
+    return { platform: null, campaign: null };
+  }
+
+  return {
+    platform: linkDocument.platform ?? null,
+    campaign: linkDocument.campaign ?? null,
+  };
 };

@@ -7,7 +7,7 @@ import {
 import {
   computePreviousIsoWeekWindow,
   computeWeekWindowEndingOnDate,
-} from "../../services/weeklyReports.dateWindow";
+} from "../../utils/weeklyReports.dateWindow";
 import {
   getLatestWeeklyReportForUser,
   getWeeklyReportForUserByWeekStart,

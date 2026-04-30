@@ -10,7 +10,7 @@ import {
   computePreviousIsoWeekWindow,
   computeWeekWindowEndingOnDate,
   type WeeklyReportDateWindow,
-} from "./weeklyReports.dateWindow";
+} from "../utils/weeklyReports.dateWindow";
 
 const ENQUEUE_BATCH_SIZE = 200;
 

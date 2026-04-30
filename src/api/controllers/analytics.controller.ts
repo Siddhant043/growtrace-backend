@@ -12,7 +12,7 @@ import {
 import {
   isSupportedTrendRange,
   type TrendRange,
-} from "../../services/analytics.helpers";
+} from "../../utils/analytics.helpers";
 import {
   getContentPerformanceForRange,
   getEngagementTrendsForRange,
@@ -25,7 +25,7 @@ import {
   type EngagementTrendsRequestQuery,
   type PlatformQualityRequestQuery,
 } from "../validators/analytics.validator";
-import { resolveDateRange } from "../../services/dateRange.utils";
+import { resolveDateRange } from "../../utils/dateRange.utils";
 
 const getAuthenticatedRequest = (request: Request): AuthenticatedRequest =>
   request as AuthenticatedRequest;

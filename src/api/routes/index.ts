@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import analyticsRouter from "./analytics";
+import attributionRouter from "./attribution";
 import authRouter from "./auth";
 import dashboardRouter from "./dashboard";
 import funnelRouter from "./funnel";
@@ -22,6 +23,7 @@ apiRouter.use("/metrics", metricsRouter);
 apiRouter.use("/funnel", funnelRouter);
 apiRouter.use("/sessions", sessionRouter);
 apiRouter.use("/reports", reportsRouter);
+apiRouter.use("/attribution", attributionRouter);
 apiRouter.use("/track", trackRouter);
 
 export default apiRouter;

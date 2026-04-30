@@ -8,16 +8,16 @@ import {
   WeeklyReportModel,
   type WeeklyReportDocument,
 } from "../api/models/weeklyReport.model";
-import { formatDateAsUtcIsoDate } from "./dateBounds.utils";
+import { formatDateAsUtcIsoDate } from "../utils/dateBounds.utils";
 import {
   buildWeeklyReportCopy,
   extractFirstName,
   type WeeklyReportCopyOutput,
-} from "./weeklyReports.copy";
+} from "../utils/weeklyReports.copy";
 import {
   computeWeekWindowBefore,
   type WeeklyReportDateWindow,
-} from "./weeklyReports.dateWindow";
+} from "../utils/weeklyReports.dateWindow";
 
 const TOP_INSIGHTS_LIMIT = 5;
 const TOP_RECOMMENDATIONS_LIMIT = 5;

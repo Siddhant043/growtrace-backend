@@ -5,7 +5,7 @@ import {
   getRangeStartDate,
   type TrendRange,
   toObjectId,
-} from "./analytics.helpers";
+} from "../utils/analytics.helpers";
 
 export type PlatformStat = {
   platform: string;

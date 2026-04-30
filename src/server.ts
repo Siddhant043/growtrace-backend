@@ -10,6 +10,7 @@ import {
 import { connectToRedis, getRedisClient } from "./infrastructure/redis";
 import helmet from "helmet";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import apiRouter from "./api/routes";
@@ -30,6 +31,7 @@ import { startBehaviorEventsWorker } from "./workers/behaviorEvents.worker";
 import { startMetricsAggregationWorker } from "./workers/metricsAggregation.worker";
 import { startFunnelAggregationWorker } from "./workers/funnelAggregation.worker";
 import { startWeeklyReportsWorker } from "./workers/weeklyReports.worker";
+import { startAttributionWorker } from "./workers/attribution.worker";
 
 const app = express();
 
@@ -59,6 +61,7 @@ const apiRequestLoggerMiddleware = (
 
 app.use(helmet());
 app.use(cors());
+app.use(cookieParser());
 app.use(morgan("dev"));
 app.use(express.json());
 const shouldEnableRateLimiting = !["development", "test"].includes(env.ENV);
@@ -162,6 +165,11 @@ const startServer = async (): Promise<void> => {
     console.log("weeklyReports disabled via WEEKLY_REPORTS_ENABLED=false");
   }
 
+  const attributionWorker = startAttributionWorker();
+  console.log(
+    `attribution worker running (env=${env.ENV}, pid=${process.pid}, concurrency=${env.ATTRIBUTION_WORKER_CONCURRENCY})`,
+  );
+
   const httpServer = app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
     console.log(
@@ -178,6 +186,7 @@ const startServer = async (): Promise<void> => {
         metricsAggregationWorker.close(),
         funnelAggregationWorker.close(),
         weeklyReportsWorker.close(),
+        attributionWorker.close(),
       ]);
     } finally {
       process.exit(0);

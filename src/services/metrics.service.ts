@@ -8,16 +8,16 @@ import {
   resolveDateRange,
   type DateRangeInput,
   type ResolvedDateRange,
-} from "./dateRange.utils";
+} from "../utils/dateRange.utils";
 import {
   buildRangeRollupGroupStage,
   computeEngagementMetricsSummaryFromRollup,
   type AggregatedRangeRollupRow,
   type EngagementMetricsSummary,
-} from "./metricsRollup.utils";
+} from "../utils/metricsRollup.utils";
 
-export type { DateRangeInput, ResolvedDateRange } from "./dateRange.utils";
-export type { EngagementMetricsSummary } from "./metricsRollup.utils";
+export type { DateRangeInput, ResolvedDateRange } from "../utils/dateRange.utils";
+export type { EngagementMetricsSummary } from "../utils/metricsRollup.utils";
 
 export type EngagementMetricsRangeResponse = ResolvedDateRange &
   EngagementMetricsSummary;

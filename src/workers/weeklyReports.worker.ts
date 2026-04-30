@@ -18,7 +18,7 @@ import {
   generateAndPersistWeeklyReport,
   type GenerateAndPersistResult,
 } from "../services/weeklyReportGenerator.service";
-import { computeWeekWindowEndingOnDate } from "../services/weeklyReports.dateWindow";
+import { computeWeekWindowEndingOnDate } from "../utils/weeklyReports.dateWindow";
 import { produceWeeklyReports } from "../services/weeklyReports.producer";
 
 const isProducerJobPayload = (

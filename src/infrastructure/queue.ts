@@ -6,6 +6,12 @@ import { env } from "../config/env";
 export const BEHAVIOR_EVENTS_QUEUE_NAME = "behaviorEvents";
 export const METRICS_AGGREGATION_QUEUE_NAME = "metricsAggregation";
 export const FUNNEL_AGGREGATION_QUEUE_NAME = "funnelAggregation";
+export const WEEKLY_REPORTS_QUEUE_NAME = "weekly-reports";
+
+export const WEEKLY_REPORTS_PRODUCER_JOB_NAME = "produce-weekly-reports";
+export const WEEKLY_REPORTS_USER_JOB_NAME = "generate-user-weekly-report";
+export const WEEKLY_REPORTS_PRODUCER_SCHEDULER_ID =
+  "weekly-reports-producer-cron";
 
 export const METRICS_AGGREGATION_SCHEDULER_IDS = {
   currentUtcDay: "recompute-current-utc-day",
@@ -228,6 +234,77 @@ export const createFunnelAggregationWorker = (
 };
 
 const FUNNEL_AGGREGATION_RECURRING_PATTERN = "*/5 * * * *";
+
+export interface WeeklyReportsProducerJobPayload {
+  reason: "cron" | "manual";
+  targetWeekEndDateIso?: string;
+}
+
+export interface WeeklyReportsUserJobPayload {
+  userId: string;
+  weekStartIso: string;
+  weekEndIso: string;
+  reason: "cron" | "manual";
+}
+
+export type WeeklyReportsJobPayload =
+  | WeeklyReportsProducerJobPayload
+  | WeeklyReportsUserJobPayload;
+
+let cachedWeeklyReportsQueue: Queue<WeeklyReportsJobPayload> | null = null;
+
+export const getWeeklyReportsQueue = (): Queue<WeeklyReportsJobPayload> => {
+  if (cachedWeeklyReportsQueue) {
+    return cachedWeeklyReportsQueue;
+  }
+
+  cachedWeeklyReportsQueue = new Queue<WeeklyReportsJobPayload>(
+    WEEKLY_REPORTS_QUEUE_NAME,
+    {
+      connection: getBullmqRedisConnection(),
+      defaultJobOptions: {
+        attempts: 5,
+        backoff: { type: "exponential", delay: 60_000 },
+        removeOnComplete: { age: 60 * 60 * 24 * 7, count: 5000 },
+        removeOnFail: { age: 60 * 60 * 24 * 30 },
+      },
+    },
+  );
+
+  return cachedWeeklyReportsQueue;
+};
+
+export const createWeeklyReportsWorker = (
+  processor: Processor<WeeklyReportsJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<WeeklyReportsJobPayload> => {
+  return new Worker<WeeklyReportsJobPayload>(
+    WEEKLY_REPORTS_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency: workerOptions.concurrency ?? 5,
+      ...workerOptions,
+    },
+  );
+};
+
+const DEFAULT_WEEKLY_REPORTS_RECURRING_PATTERN = "0 2 * * 0";
+
+export const scheduleRecurringWeeklyReportsProducer = async (
+  cronPattern: string = DEFAULT_WEEKLY_REPORTS_RECURRING_PATTERN,
+): Promise<void> => {
+  const weeklyReportsQueue = getWeeklyReportsQueue();
+
+  await weeklyReportsQueue.upsertJobScheduler(
+    WEEKLY_REPORTS_PRODUCER_SCHEDULER_ID,
+    { pattern: cronPattern },
+    {
+      name: WEEKLY_REPORTS_PRODUCER_JOB_NAME,
+      data: { reason: "cron" } satisfies WeeklyReportsProducerJobPayload,
+    },
+  );
+};
 
 export const scheduleRecurringFunnelAggregation = async (): Promise<void> => {
   const funnelQueue = getFunnelAggregationQueue();

@@ -36,6 +36,21 @@ const runtimeEnvironmentSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  WEEKLY_REPORTS_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+  WEEKLY_REPORTS_CRON: z.string().min(1).default("0 2 * * 0"),
+  WEEKLY_REPORTS_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(5),
+  WEEKLY_REPORTS_EMAIL_FROM: z
+    .string()
+    .email("WEEKLY_REPORTS_EMAIL_FROM must be a valid email address")
+    .optional(),
 });
 
 const parsedRuntimeEnvironment = runtimeEnvironmentSchema.safeParse(

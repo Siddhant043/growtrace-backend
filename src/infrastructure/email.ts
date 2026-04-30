@@ -1,6 +1,10 @@
 import nodemailer, { SendMailOptions } from "nodemailer";
 
 import { env } from "../config/env";
+import {
+  buildWeeklyReportEmail,
+  type WeeklyReportEmailViewModel,
+} from "../templates/weeklyReport.email";
 
 let mailTransporter: nodemailer.Transporter | null = null;
 
@@ -42,4 +46,36 @@ export const sendPasswordUpdatedEmail = async (
   const transporter = getMailTransporter();
 
   await transporter.sendMail(emailObject);
+};
+
+export type SendWeeklyReportEmailParameters = {
+  recipientEmail: string;
+  recipientFullName: string;
+  viewModel: WeeklyReportEmailViewModel;
+};
+
+export type SendWeeklyReportEmailResult = {
+  messageId: string;
+};
+
+export const sendWeeklyReportEmail = async (
+  parameters: SendWeeklyReportEmailParameters,
+): Promise<SendWeeklyReportEmailResult> => {
+  const transporter = getMailTransporter();
+  const builtEmail = buildWeeklyReportEmail(parameters.viewModel);
+
+  const fromAddress = env.WEEKLY_REPORTS_EMAIL_FROM ?? env.SMTP_FROM;
+  const formattedRecipient = parameters.recipientFullName
+    ? `${parameters.recipientFullName} <${parameters.recipientEmail}>`
+    : parameters.recipientEmail;
+
+  const sendResult = await transporter.sendMail({
+    from: fromAddress,
+    to: formattedRecipient,
+    subject: builtEmail.subject,
+    html: builtEmail.html,
+    text: builtEmail.text,
+  });
+
+  return { messageId: sendResult.messageId };
 };

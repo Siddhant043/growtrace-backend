@@ -24,10 +24,12 @@ import {
 import {
   scheduleRecurringFunnelAggregation,
   scheduleRecurringMetricsAggregation,
+  scheduleRecurringWeeklyReportsProducer,
 } from "./infrastructure/queue";
 import { startBehaviorEventsWorker } from "./workers/behaviorEvents.worker";
 import { startMetricsAggregationWorker } from "./workers/metricsAggregation.worker";
 import { startFunnelAggregationWorker } from "./workers/funnelAggregation.worker";
+import { startWeeklyReportsWorker } from "./workers/weeklyReports.worker";
 
 const app = express();
 
@@ -146,6 +148,20 @@ const startServer = async (): Promise<void> => {
     "funnelAggregation jobs scheduled (every 5m, current+previous UTC day)",
   );
 
+  const weeklyReportsWorker = startWeeklyReportsWorker();
+  console.log(
+    `weeklyReports worker running (env=${env.ENV}, pid=${process.pid}, concurrency=${env.WEEKLY_REPORTS_WORKER_CONCURRENCY})`,
+  );
+
+  if (env.WEEKLY_REPORTS_ENABLED) {
+    await scheduleRecurringWeeklyReportsProducer(env.WEEKLY_REPORTS_CRON);
+    console.log(
+      `weeklyReports producer scheduled (cron='${env.WEEKLY_REPORTS_CRON}')`,
+    );
+  } else {
+    console.log("weeklyReports disabled via WEEKLY_REPORTS_ENABLED=false");
+  }
+
   const httpServer = app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
     console.log(
@@ -161,6 +177,7 @@ const startServer = async (): Promise<void> => {
         behaviorEventsWorker.close(),
         metricsAggregationWorker.close(),
         funnelAggregationWorker.close(),
+        weeklyReportsWorker.close(),
       ]);
     } finally {
       process.exit(0);

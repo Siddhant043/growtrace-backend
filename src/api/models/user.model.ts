@@ -90,6 +90,10 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    weeklyReportOptOut: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

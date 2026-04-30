@@ -6,6 +6,7 @@ import dashboardRouter from "./dashboard";
 import funnelRouter from "./funnel";
 import linkRouter from "./link";
 import metricsRouter from "./metrics";
+import reportsRouter from "./reports";
 import sessionRouter from "./session";
 import trackRouter from "./track";
 import userRouter from "./users";
@@ -20,6 +21,7 @@ apiRouter.use("/dashboard", dashboardRouter);
 apiRouter.use("/metrics", metricsRouter);
 apiRouter.use("/funnel", funnelRouter);
 apiRouter.use("/sessions", sessionRouter);
+apiRouter.use("/reports", reportsRouter);
 apiRouter.use("/track", trackRouter);
 
 export default apiRouter;

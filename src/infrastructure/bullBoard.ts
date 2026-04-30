@@ -6,6 +6,7 @@ import {
   getBehaviorEventsQueue,
   getFunnelAggregationQueue,
   getMetricsAggregationQueue,
+  getWeeklyReportsQueue,
 } from "./queue";
 
 export const BULL_BOARD_BASE_PATH = "/admin/queues";
@@ -19,6 +20,7 @@ export const createBullBoardServerAdapter = (): ExpressAdapter => {
       new BullMQAdapter(getBehaviorEventsQueue()),
       new BullMQAdapter(getMetricsAggregationQueue()),
       new BullMQAdapter(getFunnelAggregationQueue()),
+      new BullMQAdapter(getWeeklyReportsQueue()),
     ],
     serverAdapter: expressAdapter,
   });

@@ -3,9 +3,9 @@ import { Types } from "mongoose";
 import {
   BehaviorEventModel,
   type BehaviorEventDocument,
-} from "../api/models/behaviorEvent.model";
-import { SessionModel, type SessionDocument } from "../api/models/session.model";
-import type { LinkPlatform } from "../api/models/link.model";
+} from "../api/models/behaviorEvent.model.js";
+import { SessionModel, type SessionDocument } from "../api/models/session.model.js";
+import type { LinkPlatform } from "../api/models/link.model.js";
 
 const DEFAULT_SESSION_LIST_PAGE_SIZE = 20;
 const MAX_SESSION_LIST_PAGE_SIZE = 100;

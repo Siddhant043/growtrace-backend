@@ -1,15 +1,15 @@
 import { Types, type PipelineStage } from "mongoose";
 
-import { UsersAggregatedModel } from "../api/models/usersAggregated.model";
-import { CohortMetricsDailyModel } from "../api/models/cohortMetricsDaily.model";
-import { InsightReadModel } from "../api/models/insightRead.model";
+import { UsersAggregatedModel } from "../api/models/usersAggregated.model.js";
+import { CohortMetricsDailyModel } from "../api/models/cohortMetricsDaily.model.js";
+import { InsightReadModel } from "../api/models/insightRead.model.js";
 import {
   HIGH_ENGAGEMENT_SCORE_MIN,
   LOW_ENGAGEMENT_SCORE_MAX,
   classifyEngagementSegment,
   getAudienceEngagementThresholds,
   type AudienceSegmentLabel,
-} from "../utils/audienceSegmentation.utils";
+} from "../utils/audienceSegmentation.utils.js";
 
 export interface AudienceSegmentCounts {
   total: number;

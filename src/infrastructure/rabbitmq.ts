@@ -1,6 +1,6 @@
 import amqp, { type Channel, type ChannelModel } from "amqplib";
 
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 
 const ANALYTICS_EXCHANGE_NAME = "analytics_exchange" as const;
 const ANALYTICS_EXCHANGE_TYPE = "topic" as const;

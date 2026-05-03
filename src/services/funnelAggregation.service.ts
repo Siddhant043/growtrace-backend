@@ -1,27 +1,27 @@
 import type { AnyBulkWriteOperation } from "mongoose";
 import { Types } from "mongoose";
 
-import { ClickEventModel } from "../api/models/clickEvent.model";
-import { SessionModel } from "../api/models/session.model";
-import type { LinkPlatform } from "../api/models/link.model";
+import { ClickEventModel } from "../api/models/clickEvent.model.js";
+import { SessionModel } from "../api/models/session.model.js";
+import type { LinkPlatform } from "../api/models/link.model.js";
 import {
   LinkFunnelDailyModel,
   type LinkFunnelDailyDocument,
-} from "../api/models/linkFunnelDaily.model";
+} from "../api/models/linkFunnelDaily.model.js";
 import {
   PlatformFunnelDailyModel,
   type PlatformFunnelDailyDocument,
-} from "../api/models/platformFunnelDaily.model";
+} from "../api/models/platformFunnelDaily.model.js";
 import {
   CampaignFunnelDailyModel,
   type CampaignFunnelDailyDocument,
-} from "../api/models/campaignFunnelDaily.model";
+} from "../api/models/campaignFunnelDaily.model.js";
 import {
   ENGAGED_DURATION_THRESHOLD_SECONDS,
   ENGAGED_SCROLL_DEPTH_THRESHOLD,
   SESSION_DURATION_CAP_SECONDS,
-} from "../api/constants/engagement";
-import { computeDayBoundsUtc } from "../utils/dateBounds.utils";
+} from "../api/constants/engagement.js";
+import { computeDayBoundsUtc } from "../utils/dateBounds.utils.js";
 
 type FunnelStageCounts = {
   clicks: number;

@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 
-import { connectToRedis } from "../../infrastructure/redis";
-import { LinkModel, type LinkPlatform } from "../models/link.model";
+import { connectToRedis } from "../../infrastructure/redis.js";
+import { LinkModel, type LinkPlatform } from "../models/link.model.js";
 
 const LINK_METADATA_CACHE_PREFIX = "link:meta:";
 const LINK_METADATA_CACHE_TTL_SECONDS = 5 * 60;

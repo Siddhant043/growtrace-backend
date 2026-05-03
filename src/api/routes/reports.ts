@@ -5,16 +5,16 @@ import {
   getWeeklyReportByWeekStart,
   getWeeklyReportsList,
   previewWeeklyReportForCurrentUser,
-} from "../controllers/reports.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { requirePlan } from "../middlewares/requirePlan";
-import { validateRequest } from "../middlewares/validateRequest";
+} from "../controllers/reports.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requirePlan } from "../middlewares/requirePlan.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   getReportByWeekStartRequestSchema,
   listReportsRequestSchema,
   previewReportRequestSchema,
-} from "../validators/reports.validator";
+} from "../validators/reports.validator.js";
 
 const reportsRouter = Router();
 reportsRouter.use(authenticate, requirePlan("pro"));

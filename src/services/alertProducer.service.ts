@@ -1,16 +1,16 @@
 import {
   evaluateAllAlertCandidatesForUser,
   type DetectedAlertCandidate,
-} from "./alertDetection.service";
+} from "./alertDetection.service.js";
 import {
   getAlertsDispatchQueue,
   type AlertsDispatchJobPayload,
-} from "../infrastructure/queue";
+} from "../infrastructure/queue.js";
 import {
   buildAlertDedupeKey,
-} from "../utils/alertDedup.utils";
-import { checkUserEligibleForAlerts } from "../utils/alertEligibility.utils";
-import type { AlertsDetectionReason } from "../infrastructure/queue";
+} from "../utils/alertDedup.utils.js";
+import { checkUserEligibleForAlerts } from "../utils/alertEligibility.utils.js";
+import type { AlertsDetectionReason } from "../infrastructure/queue.js";
 
 export interface ProduceAlertsForUserSummary {
   userId: string;

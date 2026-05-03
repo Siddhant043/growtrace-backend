@@ -1,6 +1,6 @@
 import { model, Schema, type InferSchemaType, type Types } from "mongoose";
 
-import { ALERT_TYPES, type AlertType } from "./alert.model";
+import { ALERT_TYPES, type AlertType } from "./alert.model.js";
 
 const alertTypePreferenceSchema = new Schema(
   {

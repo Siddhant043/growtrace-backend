@@ -4,14 +4,14 @@ import {
   cancelSubscriptionForCurrentUser,
   createSubscriptionForCurrentUser,
   getSubscriptionPortalForCurrentUser,
-} from "../controllers/payments.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { validateRequest } from "../middlewares/validateRequest";
+} from "../controllers/payments.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   cancelSubscriptionRequestSchema,
   createSubscriptionRequestSchema,
-} from "../validators/payments.validator";
+} from "../validators/payments.validator.js";
 
 const paymentsRouter = Router();
 

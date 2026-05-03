@@ -1,20 +1,20 @@
 import type { Request, Response } from "express";
 import { Types } from "mongoose";
 
-import { env } from "../../config/env";
+import { env } from "../../config/env.js";
 import {
   cancelRazorpaySubscription,
   createProSubscription,
   getOrCreateRazorpayCustomer,
-} from "../../infrastructure/razorpay";
-import { SubscriptionModel } from "../models/subscription.model";
-import { UserModel } from "../models/user.model";
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
+} from "../../infrastructure/razorpay.js";
+import { SubscriptionModel } from "../models/subscription.model.js";
+import { UserModel } from "../models/user.model.js";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
 import type {
   CancelSubscriptionRequestBody,
   CreateSubscriptionRequestBody,
   SubscriptionPlanTier,
-} from "../validators/payments.validator";
+} from "../validators/payments.validator.js";
 
 type ApiError = Error & {
   statusCode: number;

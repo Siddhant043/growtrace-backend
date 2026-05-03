@@ -1,16 +1,16 @@
 import { Types } from "mongoose";
 
-import { LinkFunnelDailyModel } from "../api/models/linkFunnelDaily.model";
-import { PlatformFunnelDailyModel } from "../api/models/platformFunnelDaily.model";
-import { CampaignFunnelDailyModel } from "../api/models/campaignFunnelDaily.model";
-import { LinkModel, type LinkPlatform } from "../api/models/link.model";
+import { LinkFunnelDailyModel } from "../api/models/linkFunnelDaily.model.js";
+import { PlatformFunnelDailyModel } from "../api/models/platformFunnelDaily.model.js";
+import { CampaignFunnelDailyModel } from "../api/models/campaignFunnelDaily.model.js";
+import { LinkModel, type LinkPlatform } from "../api/models/link.model.js";
 import {
   resolveDateRange,
   type DateRangeInput,
   type ResolvedDateRange,
-} from "../utils/dateRange.utils";
+} from "../utils/dateRange.utils.js";
 
-export type { DateRangeInput, ResolvedDateRange } from "../utils/dateRange.utils";
+export type { DateRangeInput, ResolvedDateRange } from "../utils/dateRange.utils.js";
 
 export type FunnelStageCounts = {
   clicks: number;

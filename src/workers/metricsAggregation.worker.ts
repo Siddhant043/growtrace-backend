@@ -1,19 +1,19 @@
 import type { Job, Worker } from "bullmq";
 import { Types } from "mongoose";
 
-import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
 import {
   createMetricsAggregationWorker,
   enqueuePerUserAlertsDetectionJob,
   METRICS_AGGREGATION_SCHEDULER_IDS,
   type MetricsAggregationJobPayload,
-} from "../infrastructure/queue";
-import { publishSnapshotsForActiveUsers } from "../services/insightsPublisher.service";
+} from "../infrastructure/queue.js";
+import { publishSnapshotsForActiveUsers } from "../services/insightsPublisher.service.js";
 import {
   aggregateAllScopesForDate,
   getCurrentUtcDateString,
   getPreviousUtcDateString,
-} from "../services/metricsAggregation.service";
+} from "../services/metricsAggregation.service.js";
 
 const resolveTargetDateForJob = (
   jobPayload: MetricsAggregationJobPayload,

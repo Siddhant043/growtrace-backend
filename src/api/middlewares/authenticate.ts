@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express'
 
-import { UserModel, type UserType } from '../models/user.model'
-import { verifyAuthToken } from '../utils/jwt'
+import { UserModel, type UserType } from '../models/user.model.js'
+import { verifyAuthToken } from '../utils/jwt.js'
 
 export type AuthenticatedUser = {
   id: string

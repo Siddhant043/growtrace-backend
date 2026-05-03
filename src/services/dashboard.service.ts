@@ -1,6 +1,6 @@
-import { ClickEventModel } from "../api/models/clickEvent.model";
-import { LinkModel } from "../api/models/link.model";
-import { calculatePercentage, toObjectId } from "../utils/analytics.helpers";
+import { ClickEventModel } from "../api/models/clickEvent.model.js";
+import { LinkModel } from "../api/models/link.model.js";
+import { calculatePercentage, toObjectId } from "../utils/analytics.helpers.js";
 
 type DashboardTopPlatform = {
   platform: string;

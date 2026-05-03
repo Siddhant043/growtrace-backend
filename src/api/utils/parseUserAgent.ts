@@ -1,4 +1,4 @@
-import type { DeviceType } from "../models/clickEvent.model";
+import type { DeviceType } from "../models/clickEvent.model.js";
 
 export type ParsedUserAgent = {
   deviceType: DeviceType;

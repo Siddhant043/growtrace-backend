@@ -1,34 +1,34 @@
 import type { AnyBulkWriteOperation } from "mongoose";
 import { Types } from "mongoose";
 
-import { SessionModel } from "../api/models/session.model";
-import type { LinkPlatform } from "../api/models/link.model";
+import { SessionModel } from "../api/models/session.model.js";
+import type { LinkPlatform } from "../api/models/link.model.js";
 import {
   LinkMetricsDailyModel,
   type LinkMetricsDailyDocument,
-} from "../api/models/linkMetricsDaily.model";
+} from "../api/models/linkMetricsDaily.model.js";
 import {
   PlatformMetricsDailyModel,
   type PlatformMetricsDailyDocument,
-} from "../api/models/platformMetricsDaily.model";
+} from "../api/models/platformMetricsDaily.model.js";
 import {
   CampaignMetricsDailyModel,
   type CampaignMetricsDailyDocument,
-} from "../api/models/campaignMetricsDaily.model";
+} from "../api/models/campaignMetricsDaily.model.js";
 import {
   ENGAGED_DURATION_THRESHOLD_SECONDS,
   ENGAGED_SCROLL_DEPTH_THRESHOLD,
   ENGAGEMENT_SCROLL_WEIGHT,
   ENGAGEMENT_TIME_WEIGHT,
   SESSION_DURATION_CAP_SECONDS,
-} from "../api/constants/engagement";
-import { computeDayBoundsUtc } from "../utils/dateBounds.utils";
+} from "../api/constants/engagement.js";
+import { computeDayBoundsUtc } from "../utils/dateBounds.utils.js";
 
 export {
   formatDateAsUtcIsoDate,
   getCurrentUtcDateString,
   getPreviousUtcDateString,
-} from "../utils/dateBounds.utils";
+} from "../utils/dateBounds.utils.js";
 
 type AggregatedMetricRow = {
   totalSessions: number;

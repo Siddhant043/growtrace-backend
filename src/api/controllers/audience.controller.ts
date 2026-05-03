@@ -8,13 +8,13 @@ import {
   listUsersAggregated,
   type AudienceUserSegmentFilter,
   type AudienceUserSortField,
-} from "../../services/audience.read.service";
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
+} from "../../services/audience.read.service.js";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
 import type {
   GetAudienceCohortsRequestQuery,
   GetAudienceInsightsRequestQuery,
   GetAudienceUsersRequestQuery,
-} from "../validators/audience.validator";
+} from "../validators/audience.validator.js";
 
 const requireAuthenticatedUserId = (request: Request): string => {
   const authenticatedUser = (request as AuthenticatedRequest).authenticatedUser;

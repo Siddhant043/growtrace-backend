@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ClickEventModel } from "../../src/api/models/clickEvent.model";
-import { LinkModel } from "../../src/api/models/link.model";
-import { getDashboardPayload } from "../../src/services/dashboard.service";
+import { ClickEventModel } from "../../src/api/models/clickEvent.model.js";
+import { LinkModel } from "../../src/api/models/link.model.js";
+import { getDashboardPayload } from "../../src/services/dashboard.service.js";
 
 describe("dashboard.service", () => {
   afterEach(() => {

@@ -1,24 +1,24 @@
 import type { Request, Response } from "express";
 
-import { ALERT_TYPES, type AlertType } from "../models/alert.model";
+import { ALERT_TYPES, type AlertType } from "../models/alert.model.js";
 import {
   countUnreadAlertsForUser,
   deleteAlertForUser,
   listAlertsForUser,
   markAlertAsReadForUser,
   markAllAlertsAsReadForUser,
-} from "../../services/alertRead.service";
+} from "../../services/alertRead.service.js";
 import {
   getNotificationPreferencesForUser,
   upsertNotificationPreferencesForUser,
-} from "../../services/alertPreferences.service";
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
+} from "../../services/alertPreferences.service.js";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
 import type {
   DeleteNotificationRequestParams,
   ListNotificationsRequestQuery,
   MarkNotificationReadRequestParams,
   UpdateNotificationPreferencesRequestBody,
-} from "../validators/notifications.validator";
+} from "../validators/notifications.validator.js";
 
 const requireAuthenticatedUserId = (request: Request): string => {
   const authenticatedUser = (request as AuthenticatedRequest).authenticatedUser;

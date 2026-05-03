@@ -1,7 +1,7 @@
-import { LinkModel, type LinkPlatform } from "../api/models/link.model";
-import { ClickEventModel } from "../api/models/clickEvent.model";
-import { generateShortCode } from "../api/utils/generateShortCode";
-import type { ListLinksRequestQuery } from "../api/validators/link.validator";
+import { LinkModel, type LinkPlatform } from "../api/models/link.model.js";
+import { ClickEventModel } from "../api/models/clickEvent.model.js";
+import { generateShortCode } from "../api/utils/generateShortCode.js";
+import type { ListLinksRequestQuery } from "../api/validators/link.validator.js";
 import { Types } from "mongoose";
 
 type CreateLinkInput = {

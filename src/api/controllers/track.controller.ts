@@ -1,23 +1,23 @@
 import type { Request, Response } from "express";
 import { Types } from "mongoose";
 
-import { connectToRedis } from "../../infrastructure/redis";
+import { connectToRedis } from "../../infrastructure/redis.js";
 import {
   enqueueBehaviorEvent,
   type BehaviorEventJobPayload,
-} from "../../infrastructure/queue";
-import { enqueueAttributionTouchpoint } from "../../services/attributionProducer.service";
+} from "../../infrastructure/queue.js";
+import { enqueueAttributionTouchpoint } from "../../services/attributionProducer.service.js";
 import {
   mapBehaviorEventToAttributionTouchpointType,
   type BehaviorEventForAttribution,
-} from "../../utils/attribution.eventMapper";
-import { UserModel } from "../models/user.model";
-import { LinkModel } from "../models/link.model";
-import { resolveClientIpAddress } from "../utils/resolveClientIpAddress";
-import { getCountryFromIP } from "../utils/getCountryFromIP";
-import { isLikelyBot } from "../utils/isLikelyBot";
-import { readUserTrackingIdFromRequest } from "../utils/userTrackingCookie";
-import type { TrackEventRequestBody } from "../validators/track.validator";
+} from "../../utils/attribution.eventMapper.js";
+import { UserModel } from "../models/user.model.js";
+import { LinkModel } from "../models/link.model.js";
+import { resolveClientIpAddress } from "../utils/resolveClientIpAddress.js";
+import { getCountryFromIP } from "../utils/getCountryFromIP.js";
+import { isLikelyBot } from "../utils/isLikelyBot.js";
+import { readUserTrackingIdFromRequest } from "../utils/userTrackingCookie.js";
+import type { TrackEventRequestBody } from "../validators/track.validator.js";
 
 const API_KEY_CACHE_PREFIX = "tracking:apiKey:";
 const API_KEY_CACHE_TTL_SECONDS = 5 * 60;

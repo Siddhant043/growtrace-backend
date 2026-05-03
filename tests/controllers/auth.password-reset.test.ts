@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
-import { env } from "../../src/config/env";
+import { env } from "../../src/config/env.js";
 
 const {
   findOneMock,
@@ -50,7 +50,7 @@ vi.mock("../../src/infrastructure/redis", () => ({
 import {
   forgotPassword,
   resetPassword,
-} from "../../src/api/controllers/auth.controller";
+} from "../../src/api/controllers/auth.controller.js";
 
 type MockResponse = Response & {
   status: ReturnType<typeof vi.fn>;

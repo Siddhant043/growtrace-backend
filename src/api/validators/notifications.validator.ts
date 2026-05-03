@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ALERT_TYPES } from "../models/alert.model";
+import { ALERT_TYPES } from "../models/alert.model.js";
 
 const objectIdSchema = z
   .string()

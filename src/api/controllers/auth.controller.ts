@@ -3,22 +3,22 @@ import type { Request, Response } from "express";
 import { randomBytes } from "node:crypto";
 import { Types } from "mongoose";
 
-import { env } from "../../config/env";
+import { env } from "../../config/env.js";
 import {
   sendPasswordResetEmail,
   sendPasswordUpdatedEmail,
-} from "../../infrastructure/email";
-import { connectToRedis } from "../../infrastructure/redis";
-import { UserModel, type AuthType, type UserType } from "../models/user.model";
+} from "../../infrastructure/email.js";
+import { connectToRedis } from "../../infrastructure/redis.js";
+import { UserModel, type AuthType, type UserType } from "../models/user.model.js";
 import type {
   ForgotPasswordRequestBody,
   LoginRequestBody,
   ResetPasswordRequestBody,
   ResetPasswordRequestQuery,
   SignupRequestBody,
-} from "../validators/auth.validator";
-import { signAuthToken } from "../utils/jwt";
-import { verifyGoogleIdToken } from "../utils/googleAuth";
+} from "../validators/auth.validator.js";
+import { signAuthToken } from "../utils/jwt.js";
+import { verifyGoogleIdToken } from "../utils/googleAuth.js";
 
 type ApiError = Error & { statusCode: number };
 type AuthUserRecord = {

@@ -3,14 +3,14 @@ import { Router } from "express";
 import {
   getSessionDetail,
   listSessions,
-} from "../controllers/session.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { validateRequest } from "../middlewares/validateRequest";
+} from "../controllers/session.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   getSessionDetailRequestSchema,
   listSessionsRequestSchema,
-} from "../validators/session.validator";
+} from "../validators/session.validator.js";
 
 const sessionRouter = Router();
 

@@ -1,6 +1,6 @@
 import { model, Schema, type InferSchemaType } from "mongoose";
 
-import { env } from "../../config/env";
+import { env } from "../../config/env.js";
 
 export const USER_TYPES = ["normal", "superadmin"] as const;
 export type UserType = (typeof USER_TYPES)[number];

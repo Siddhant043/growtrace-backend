@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import analyticsRouter from "../../src/api/routes/analytics";
-import dashboardRouter from "../../src/api/routes/dashboard";
-import { authenticate } from "../../src/api/middlewares/authenticate";
+import analyticsRouter from "../../src/api/routes/analytics.js";
+import dashboardRouter from "../../src/api/routes/dashboard.js";
+import { authenticate } from "../../src/api/middlewares/authenticate.js";
 
 type RouterLayer = {
   route?: {

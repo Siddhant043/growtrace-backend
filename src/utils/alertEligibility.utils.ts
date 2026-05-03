@@ -1,8 +1,8 @@
 import { Types } from "mongoose";
 
-import { env } from "../config/env";
-import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
-import { UserModel } from "../api/models/user.model";
+import { env } from "../config/env.js";
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
+import { UserModel } from "../api/models/user.model.js";
 
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 

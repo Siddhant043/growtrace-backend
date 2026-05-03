@@ -1,11 +1,11 @@
 import type { Job, Worker } from "bullmq";
 
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 import {
   createAttributionWorker,
   type AttributionTouchpointJobPayload,
-} from "../infrastructure/queue";
-import { processAttributionTouchpointJob } from "../services/attributionJourney.service";
+} from "../infrastructure/queue.js";
+import { processAttributionTouchpointJob } from "../services/attributionJourney.service.js";
 
 let cachedAttributionWorker: Worker<AttributionTouchpointJobPayload> | null =
   null;

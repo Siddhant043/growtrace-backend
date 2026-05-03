@@ -1,19 +1,19 @@
 import type { Job, Worker } from "bullmq";
 import { Types } from "mongoose";
 
-import { env } from "../config/env";
-import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
+import { env } from "../config/env.js";
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
 import {
   buildAlertsDetectionJobId,
   createAlertsDetectionWorker,
   getAlertsDetectionQueue,
   type AlertsDetectionJobPayload,
   type AlertsDetectionReason,
-} from "../infrastructure/queue";
+} from "../infrastructure/queue.js";
 import {
   produceAlertsForUser,
   type ProduceAlertsForUserSummary,
-} from "../services/alertProducer.service";
+} from "../services/alertProducer.service.js";
 
 interface DetectionFanOutSummary {
   attemptedUserCount: number;

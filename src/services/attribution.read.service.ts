@@ -1,7 +1,7 @@
 import { Types, type PipelineStage } from "mongoose";
 
-import { JourneyModel } from "../api/models/journey.model";
-import { TouchpointModel } from "../api/models/touchpoint.model";
+import { JourneyModel } from "../api/models/journey.model.js";
+import { TouchpointModel } from "../api/models/touchpoint.model.js";
 
 const UNKNOWN_PLATFORM_LABEL = "unknown";
 

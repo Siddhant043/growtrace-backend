@@ -1,20 +1,20 @@
 import { Router } from "express";
 
-import analyticsRouter from "./analytics";
-import attributionRouter from "./attribution";
-import audienceRouter from "./audience";
-import authRouter from "./auth";
-import dashboardRouter from "./dashboard";
-import funnelRouter from "./funnel";
-import linkRouter from "./link";
-import metricsRouter from "./metrics";
-import notificationsRouter from "./notifications";
-import paymentsRouter from "./payments";
-import reportsRouter from "./reports";
-import sessionRouter from "./session";
-import trackRouter from "./track";
-import userRouter from "./users";
-import webhooksRouter from "./webhooks";
+import analyticsRouter from "./analytics.js";
+import attributionRouter from "./attribution.js";
+import audienceRouter from "./audience.js";
+import authRouter from "./auth.js";
+import dashboardRouter from "./dashboard.js";
+import funnelRouter from "./funnel.js";
+import linkRouter from "./link.js";
+import metricsRouter from "./metrics.js";
+import notificationsRouter from "./notifications.js";
+import paymentsRouter from "./payments.js";
+import reportsRouter from "./reports.js";
+import sessionRouter from "./session.js";
+import trackRouter from "./track.js";
+import userRouter from "./users.js";
+import webhooksRouter from "./webhooks.js";
 
 const apiRouter = Router();
 

@@ -1,6 +1,6 @@
 import { model, Schema, type InferSchemaType, type Types } from "mongoose";
 
-import { LINK_PLATFORMS } from "./link.model";
+import { LINK_PLATFORMS } from "./link.model.js";
 
 export const DEVICE_TYPES = ["mobile", "desktop", "tablet"] as const;
 export type DeviceType = (typeof DEVICE_TYPES)[number];

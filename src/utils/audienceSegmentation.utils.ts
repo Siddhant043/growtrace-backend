@@ -1,4 +1,4 @@
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 
 export const HIGH_ENGAGEMENT_SCORE_MIN = env.AUDIENCE_HIGH_ENGAGEMENT_SCORE_MIN;
 export const LOW_ENGAGEMENT_SCORE_MAX = env.AUDIENCE_LOW_ENGAGEMENT_SCORE_MAX;

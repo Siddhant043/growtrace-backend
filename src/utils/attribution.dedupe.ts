@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { AttributionTouchpointJobPayload } from "../infrastructure/queue";
+import type { AttributionTouchpointJobPayload } from "../infrastructure/queue.js";
 
 const ONE_MINUTE_MS = 60_000;
 

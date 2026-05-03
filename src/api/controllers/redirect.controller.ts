@@ -1,11 +1,11 @@
 import type { Request, Response } from "express";
 
-import { LinkModel } from "../models/link.model";
-import { logClick } from "../../services/tracking.service";
-import { enqueueAttributionTouchpoint } from "../../services/attributionProducer.service";
-import { appendTrackingParam } from "../utils/appendTrackingParam";
-import { isLikelyBot } from "../utils/isLikelyBot";
-import { ensureUserTrackingIdOnResponse } from "../utils/userTrackingCookie";
+import { LinkModel } from "../models/link.model.js";
+import { logClick } from "../../services/tracking.service.js";
+import { enqueueAttributionTouchpoint } from "../../services/attributionProducer.service.js";
+import { appendTrackingParam } from "../utils/appendTrackingParam.js";
+import { isLikelyBot } from "../utils/isLikelyBot.js";
+import { ensureUserTrackingIdOnResponse } from "../utils/userTrackingCookie.js";
 
 type ApiError = Error & { statusCode: number };
 

@@ -6,17 +6,17 @@ import {
   getLinkDetails,
   listLinks,
   updateLinkDetails,
-} from "../controllers/link.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { validateRequest } from "../middlewares/validateRequest";
+} from "../controllers/link.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   createLinkRequestSchema,
   deleteLinkRequestSchema,
   linkByShortCodeRequestSchema,
   listLinksRequestSchema,
   updateLinkRequestSchema,
-} from "../validators/link.validator";
+} from "../validators/link.validator.js";
 
 const linkRouter = Router();
 

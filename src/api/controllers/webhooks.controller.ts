@@ -1,14 +1,14 @@
 import crypto from "crypto";
 import type { Request, Response } from "express";
 
-import { verifyRazorpayWebhookSignature } from "../../infrastructure/razorpay";
+import { verifyRazorpayWebhookSignature } from "../../infrastructure/razorpay.js";
 import {
   isHandledRazorpayEvent,
   processRazorpayLifecycleEvent,
   type HandledRazorpayEvent,
   type RazorpayLifecycleEventInput,
-} from "../../services/subscriptionLifecycle.service";
-import { RazorpayWebhookEventModel } from "../models/razorpayWebhookEvent.model";
+} from "../../services/subscriptionLifecycle.service.js";
+import { RazorpayWebhookEventModel } from "../models/razorpayWebhookEvent.model.js";
 
 type RawBodyAwareRequest = Request & { rawBody?: Buffer | string };
 

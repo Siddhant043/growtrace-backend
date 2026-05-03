@@ -4,15 +4,15 @@ import type { Job, Worker } from "bullmq";
 import {
   createBehaviorEventsWorker,
   type BehaviorEventJobPayload,
-} from "../infrastructure/queue";
+} from "../infrastructure/queue.js";
 import {
   BehaviorEventModel,
   type BehaviorEventType,
-} from "../api/models/behaviorEvent.model";
-import { SessionModel } from "../api/models/session.model";
-import { parseUserAgent } from "../api/utils/parseUserAgent";
-import { getLinkMetadataSummary } from "../api/utils/linkMetadataCache";
-import { BOUNCE_DURATION_THRESHOLD_SECONDS } from "../api/constants/engagement";
+} from "../api/models/behaviorEvent.model.js";
+import { SessionModel } from "../api/models/session.model.js";
+import { parseUserAgent } from "../api/utils/parseUserAgent.js";
+import { getLinkMetadataSummary } from "../api/utils/linkMetadataCache.js";
+import { BOUNCE_DURATION_THRESHOLD_SECONDS } from "../api/constants/engagement.js";
 
 const toObjectIdOrNull = (
   candidateId: string | null,

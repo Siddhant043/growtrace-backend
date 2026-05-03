@@ -1,4 +1,4 @@
-import { formatDateAsUtcIsoDate } from "./dateBounds.utils";
+import { formatDateAsUtcIsoDate } from "./dateBounds.utils.js";
 
 const MILLIS_PER_DAY = 86_400_000;
 

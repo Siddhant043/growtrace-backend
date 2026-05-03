@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-import { connectToDatabase } from "../../infrastructure/db";
-import { ClickEventModel } from "../../api/models/clickEvent.model";
-import { LinkModel } from "../../api/models/link.model";
+import { connectToDatabase } from "../../infrastructure/db.js";
+import { ClickEventModel } from "../../api/models/clickEvent.model.js";
+import { LinkModel } from "../../api/models/link.model.js";
 
 type ClickEventsMissingCampaignAggregateRow = {
   _id: mongoose.Types.ObjectId;

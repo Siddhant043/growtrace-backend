@@ -4,11 +4,11 @@ import {
   ALERT_TYPES,
   type AlertChannel,
   type AlertType,
-} from "../api/models/alert.model";
+} from "../api/models/alert.model.js";
 import {
   UserNotificationPreferencesModel,
   type UserNotificationPreferencesDocument,
-} from "../api/models/userNotificationPreferences.model";
+} from "../api/models/userNotificationPreferences.model.js";
 
 export interface AlertTypePreferenceMap {
   engagement_drop: boolean;

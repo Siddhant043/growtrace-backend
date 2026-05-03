@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-import { connectToDatabase } from "../../infrastructure/db";
-import { SessionModel } from "../../api/models/session.model";
-import { LinkModel, type LinkPlatform } from "../../api/models/link.model";
+import { connectToDatabase } from "../../infrastructure/db.js";
+import { SessionModel } from "../../api/models/session.model.js";
+import { LinkModel, type LinkPlatform } from "../../api/models/link.model.js";
 
 type SessionsMissingMetadataAggregateRow = {
   _id: mongoose.Types.ObjectId;

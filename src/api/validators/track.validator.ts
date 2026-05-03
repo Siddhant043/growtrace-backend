@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { BEHAVIOR_EVENT_TYPES } from "../models/behaviorEvent.model";
+import { BEHAVIOR_EVENT_TYPES } from "../models/behaviorEvent.model.js";
 
 const optionalTrimmedString = z
   .string()

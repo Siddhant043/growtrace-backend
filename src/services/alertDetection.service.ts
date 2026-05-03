@@ -1,15 +1,15 @@
 import { Types, type PipelineStage } from "mongoose";
 
-import { env } from "../config/env";
-import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
-import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model";
-import { LinkModel } from "../api/models/link.model";
+import { env } from "../config/env.js";
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
+import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model.js";
+import { LinkModel } from "../api/models/link.model.js";
 import {
   formatDateAsUtcIsoDate,
   getCurrentUtcDateString,
   getPreviousUtcDateString,
-} from "../utils/dateBounds.utils";
-import type { AlertType } from "../api/models/alert.model";
+} from "../utils/dateBounds.utils.js";
+import type { AlertType } from "../api/models/alert.model.js";
 
 const TRAFFIC_SPIKE_BASELINE_DAYS = 7;
 

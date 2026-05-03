@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
 
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
-import type { LinkPlatform } from "../models/link.model";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
+import type { LinkPlatform } from "../models/link.model.js";
 import {
   getCampaignFunnelForRange,
   getLinkFunnelForRange,
   getPlatformFunnelForRange,
   listLinkFunnelsForRange,
-} from "../../services/funnel.service";
+} from "../../services/funnel.service.js";
 
 const getAuthenticatedRequest = (request: Request): AuthenticatedRequest =>
   request as AuthenticatedRequest;

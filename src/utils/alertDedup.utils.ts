@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 
-import { env } from "../config/env";
-import type { AlertType } from "../api/models/alert.model";
+import { env } from "../config/env.js";
+import type { AlertType } from "../api/models/alert.model.js";
 
 const MILLIS_PER_HOUR = 60 * 60 * 1000;
 

@@ -3,7 +3,7 @@ import type {
   WeeklyReportPayload,
   WeeklyReportRecommendationEntry,
   WeeklyReportTrendBucket,
-} from "../services/weeklyReportGenerator.service";
+} from "../services/weeklyReportGenerator.service.js";
 
 export type WeeklyReportEmailViewModel = {
   payload: WeeklyReportPayload;

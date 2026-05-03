@@ -8,11 +8,11 @@ import {
   markAllNotificationsReadForCurrentUser,
   markNotificationReadForCurrentUser,
   updateNotificationPreferencesForCurrentUser,
-} from "../controllers/notifications.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { requirePlan } from "../middlewares/requirePlan";
-import { validateRequest } from "../middlewares/validateRequest";
+} from "../controllers/notifications.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requirePlan } from "../middlewares/requirePlan.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   deleteNotificationRequestSchema,
   getNotificationPreferencesRequestSchema,
@@ -21,7 +21,7 @@ import {
   markAllNotificationsReadRequestSchema,
   markNotificationReadRequestSchema,
   updateNotificationPreferencesRequestSchema,
-} from "../validators/notifications.validator";
+} from "../validators/notifications.validator.js";
 
 const notificationsRouter = Router();
 notificationsRouter.use(authenticate, requirePlan("pro"));

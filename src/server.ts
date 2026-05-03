@@ -1,42 +1,42 @@
 import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
 
-import { env } from "./config/env";
-import { connectToDatabase } from "./infrastructure/db";
+import { env } from "./config/env.js";
+import { connectToDatabase } from "./infrastructure/db.js";
 import {
   connectToRabbitMQ,
   getRabbitMQConnection,
-} from "./infrastructure/rabbitmq";
-import { connectToRedis, getRedisClient } from "./infrastructure/redis";
+} from "./infrastructure/rabbitmq.js";
+import { connectToRedis, getRedisClient } from "./infrastructure/redis.js";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
-import apiRouter from "./api/routes";
-import { notFoundHandler } from "./api/middlewares/notFoundHandler";
-import { errorHandler } from "./api/middlewares/errorHandler";
-import redirectRouter from "./api/routes/redirect";
-import trackRouter from "./api/routes/track";
+import apiRouter from "./api/routes/index.js";
+import { notFoundHandler } from "./api/middlewares/notFoundHandler.js";
+import { errorHandler } from "./api/middlewares/errorHandler.js";
+import redirectRouter from "./api/routes/redirect.js";
+import trackRouter from "./api/routes/track.js";
 import {
   BULL_BOARD_BASE_PATH,
   createBullBoardServerAdapter,
-} from "./infrastructure/bullBoard";
+} from "./infrastructure/bullBoard.js";
 import {
   scheduleRecurringAlertsDetection,
   scheduleRecurringAudienceAggregation,
   scheduleRecurringFunnelAggregation,
   scheduleRecurringMetricsAggregation,
   scheduleRecurringWeeklyReportsProducer,
-} from "./infrastructure/queue";
-import { startBehaviorEventsWorker } from "./workers/behaviorEvents.worker";
-import { startMetricsAggregationWorker } from "./workers/metricsAggregation.worker";
-import { startFunnelAggregationWorker } from "./workers/funnelAggregation.worker";
-import { startWeeklyReportsWorker } from "./workers/weeklyReports.worker";
-import { startAttributionWorker } from "./workers/attribution.worker";
-import { startAudienceAggregationWorker } from "./workers/audienceAggregation.worker";
-import { startAlertsDetectionWorker } from "./workers/alertsDetection.worker";
-import { startAlertsDispatchWorker } from "./workers/alertsDispatch.worker";
+} from "./infrastructure/queue.js";
+import { startBehaviorEventsWorker } from "./workers/behaviorEvents.worker.js";
+import { startMetricsAggregationWorker } from "./workers/metricsAggregation.worker.js";
+import { startFunnelAggregationWorker } from "./workers/funnelAggregation.worker.js";
+import { startWeeklyReportsWorker } from "./workers/weeklyReports.worker.js";
+import { startAttributionWorker } from "./workers/attribution.worker.js";
+import { startAudienceAggregationWorker } from "./workers/audienceAggregation.worker.js";
+import { startAlertsDetectionWorker } from "./workers/alertsDetection.worker.js";
+import { startAlertsDispatchWorker } from "./workers/alertsDispatch.worker.js";
 
 const app = express();
 

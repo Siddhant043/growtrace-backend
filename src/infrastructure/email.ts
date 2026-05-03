@@ -1,14 +1,14 @@
 import nodemailer, { SendMailOptions } from "nodemailer";
 
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 import {
   buildAlertEmail,
   type AlertEmailViewModel,
-} from "../templates/alert.email";
+} from "../templates/alert.email.js";
 import {
   buildWeeklyReportEmail,
   type WeeklyReportEmailViewModel,
-} from "../templates/weeklyReport.email";
+} from "../templates/weeklyReport.email.js";
 
 let mailTransporter: nodemailer.Transporter | null = null;
 

@@ -1,16 +1,16 @@
 import { Types } from "mongoose";
 
-import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
 import {
   WEEKLY_REPORTS_USER_JOB_NAME,
   getWeeklyReportsQueue,
   type WeeklyReportsUserJobPayload,
-} from "../infrastructure/queue";
+} from "../infrastructure/queue.js";
 import {
   computePreviousIsoWeekWindow,
   computeWeekWindowEndingOnDate,
   type WeeklyReportDateWindow,
-} from "../utils/weeklyReports.dateWindow";
+} from "../utils/weeklyReports.dateWindow.js";
 
 const ENQUEUE_BATCH_SIZE = 200;
 

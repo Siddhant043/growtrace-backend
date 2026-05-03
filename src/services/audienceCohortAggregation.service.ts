@@ -1,16 +1,16 @@
 import type { AnyBulkWriteOperation, PipelineStage } from "mongoose";
 import { Types } from "mongoose";
 
-import { UsersAggregatedModel } from "../api/models/usersAggregated.model";
+import { UsersAggregatedModel } from "../api/models/usersAggregated.model.js";
 import {
   CohortMetricsDailyModel,
   type CohortMetricsDailyDocument,
-} from "../api/models/cohortMetricsDaily.model";
-import { env } from "../config/env";
+} from "../api/models/cohortMetricsDaily.model.js";
+import { env } from "../config/env.js";
 import {
   HIGH_ENGAGEMENT_SCORE_MIN,
   LOW_ENGAGEMENT_SCORE_MAX,
-} from "../utils/audienceSegmentation.utils";
+} from "../utils/audienceSegmentation.utils.js";
 
 interface CohortAggregationPipelineRow {
   _id: {

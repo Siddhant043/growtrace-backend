@@ -1,11 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
 
-import type { SubscriptionType } from "../models/user.model";
+import type { SubscriptionType } from "../models/user.model.js";
 import {
   getEffectivePlanForUser,
   type EffectivePlanInfo,
-} from "../../services/planInfo.service";
-import type { AuthenticatedRequest } from "./authenticate";
+} from "../../services/planInfo.service.js";
+import type { AuthenticatedRequest } from "./authenticate.js";
 
 type ApiError = Error & {
   statusCode: number;

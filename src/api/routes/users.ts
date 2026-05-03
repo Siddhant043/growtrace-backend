@@ -4,11 +4,11 @@ import {
   getCurrentUserPlan,
   getCurrentUserProfile,
   updateCurrentUserPassword,
-} from "../controllers/users.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { validateRequest } from "../middlewares/validateRequest";
-import { updatePasswordRequestSchema } from "../validators/auth.validator";
+} from "../controllers/users.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
+import { updatePasswordRequestSchema } from "../validators/auth.validator.js";
 
 const router = Router();
 

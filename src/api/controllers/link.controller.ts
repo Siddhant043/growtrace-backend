@@ -1,19 +1,19 @@
 import type { Request, Response } from "express";
 
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
 import type {
   CreateLinkRequestBody,
   ListLinksRequestQuery,
   LinkByShortCodeParams,
   UpdateLinkRequestBody,
-} from "../validators/link.validator";
+} from "../validators/link.validator.js";
 import {
   createLink,
   deleteLinkByShortCode,
   getLinkByShortCode,
   listLinksForUser,
   updateLinkByShortCode,
-} from "../../services/link.service";
+} from "../../services/link.service.js";
 
 export const listLinks = async (request: Request, response: Response): Promise<void> => {
   const authenticatedRequest = request as AuthenticatedRequest & {

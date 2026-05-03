@@ -1,31 +1,31 @@
 import type { Request, Response } from "express";
 
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
-import type { LinkPlatform } from "../models/link.model";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
+import type { LinkPlatform } from "../models/link.model.js";
 import {
   compareAnalyticsByPlatform,
   getClickTrends,
   getOverview,
   getPlatformStats,
   getTopLinks,
-} from "../../services/analytics.service";
+} from "../../services/analytics.service.js";
 import {
   isSupportedTrendRange,
   type TrendRange,
-} from "../../utils/analytics.helpers";
+} from "../../utils/analytics.helpers.js";
 import {
   getContentPerformanceForRange,
   getEngagementTrendsForRange,
   getPlatformQualityComparison,
-} from "../../services/advancedAnalytics.service";
+} from "../../services/advancedAnalytics.service.js";
 import {
   resolveDayCountForTrendRange,
   type AnalyticsTrendRange,
   type ContentPerformanceRequestQuery,
   type EngagementTrendsRequestQuery,
   type PlatformQualityRequestQuery,
-} from "../validators/analytics.validator";
-import { resolveDateRange } from "../../utils/dateRange.utils";
+} from "../validators/analytics.validator.js";
+import { resolveDateRange } from "../../utils/dateRange.utils.js";
 
 const getAuthenticatedRequest = (request: Request): AuthenticatedRequest =>
   request as AuthenticatedRequest;

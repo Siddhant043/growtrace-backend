@@ -9,16 +9,16 @@ import {
   getContentPerformance,
   getEngagementTrends,
   getPlatformQuality,
-} from "../controllers/analytics.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { requirePlan } from "../middlewares/requirePlan";
-import { validateRequest } from "../middlewares/validateRequest";
+} from "../controllers/analytics.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requirePlan } from "../middlewares/requirePlan.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   contentPerformanceRequestSchema,
   engagementTrendsRequestSchema,
   platformQualityRequestSchema,
-} from "../validators/analytics.validator";
+} from "../validators/analytics.validator.js";
 
 const analyticsRouter = Router();
 

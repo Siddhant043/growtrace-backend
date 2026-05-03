@@ -1,8 +1,8 @@
 import Razorpay from "razorpay";
 import type { Types } from "mongoose";
 
-import { env } from "../config/env";
-import { UserModel } from "../api/models/user.model";
+import { env } from "../config/env.js";
+import { UserModel } from "../api/models/user.model.js";
 
 let razorpaySingleton: Razorpay | null = null;
 

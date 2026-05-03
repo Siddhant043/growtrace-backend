@@ -1,15 +1,15 @@
 import { Types } from "mongoose";
 
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 import {
   TouchpointModel,
   type TouchpointDocument,
   type TouchpointType,
-} from "../api/models/touchpoint.model";
-import { JourneyModel } from "../api/models/journey.model";
-import type { AttributionTouchpointJobPayload } from "../infrastructure/queue";
-import { isLikelyBot } from "../api/utils/isLikelyBot";
-import { computeTouchpointDedupeKey } from "../utils/attribution.dedupe";
+} from "../api/models/touchpoint.model.js";
+import { JourneyModel } from "../api/models/journey.model.js";
+import type { AttributionTouchpointJobPayload } from "../infrastructure/queue.js";
+import { isLikelyBot } from "../api/utils/isLikelyBot.js";
+import { computeTouchpointDedupeKey } from "../utils/attribution.dedupe.js";
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 

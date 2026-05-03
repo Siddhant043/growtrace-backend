@@ -1,7 +1,7 @@
 import type { Job, Worker } from "bullmq";
 
-import { env } from "../config/env";
-import { sendWeeklyReportEmail } from "../infrastructure/email";
+import { env } from "../config/env.js";
+import { sendWeeklyReportEmail } from "../infrastructure/email.js";
 import {
   WEEKLY_REPORTS_PRODUCER_JOB_NAME,
   WEEKLY_REPORTS_USER_JOB_NAME,
@@ -9,17 +9,17 @@ import {
   type WeeklyReportsJobPayload,
   type WeeklyReportsProducerJobPayload,
   type WeeklyReportsUserJobPayload,
-} from "../infrastructure/queue";
+} from "../infrastructure/queue.js";
 import {
   WeeklyReportModel,
   type WeeklyReportDeliveryStatus,
-} from "../api/models/weeklyReport.model";
+} from "../api/models/weeklyReport.model.js";
 import {
   generateAndPersistWeeklyReport,
   type GenerateAndPersistResult,
-} from "../services/weeklyReportGenerator.service";
-import { computeWeekWindowEndingOnDate } from "../utils/weeklyReports.dateWindow";
-import { produceWeeklyReports } from "../services/weeklyReports.producer";
+} from "../services/weeklyReportGenerator.service.js";
+import { computeWeekWindowEndingOnDate } from "../utils/weeklyReports.dateWindow.js";
+import { produceWeeklyReports } from "../services/weeklyReports.producer.js";
 
 const isProducerJobPayload = (
   jobPayload: WeeklyReportsJobPayload,

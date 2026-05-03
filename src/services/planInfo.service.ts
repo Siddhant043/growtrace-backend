@@ -1,19 +1,19 @@
 import { Types } from "mongoose";
 
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 import {
   SubscriptionModel,
   type SubscriptionDocument,
-} from "../api/models/subscription.model";
+} from "../api/models/subscription.model.js";
 import {
   UserModel,
   type SubscriptionStatus,
   type SubscriptionType,
-} from "../api/models/user.model";
+} from "../api/models/user.model.js";
 import {
   getPlanFeatures,
   type PlanFeature,
-} from "./plan/planFeatures";
+} from "./plan/planFeatures.js";
 
 export type EffectivePlanInfo = {
   plan: SubscriptionType;

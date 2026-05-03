@@ -1,12 +1,12 @@
 import {
   SubscriptionModel,
   type SubscriptionDocument,
-} from "../api/models/subscription.model";
+} from "../api/models/subscription.model.js";
 import {
   UserModel,
   type SubscriptionStatus,
   type SubscriptionType,
-} from "../api/models/user.model";
+} from "../api/models/user.model.js";
 
 export const HANDLED_RAZORPAY_EVENTS = [
   "subscription.activated",

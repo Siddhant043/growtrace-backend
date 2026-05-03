@@ -1,7 +1,7 @@
 import type { CookieOptions, Request, Response } from "express";
 
-import { env } from "../../config/env";
-import { generateUuidV4 } from "./generateUuidV4";
+import { env } from "../../config/env.js";
+import { generateUuidV4 } from "./generateUuidV4.js";
 
 const SECONDS_PER_DAY = 86_400;
 

@@ -1,7 +1,7 @@
 import {
   SUBSCRIPTION_TYPES,
   type SubscriptionType,
-} from "../../api/models/user.model";
+} from "../../api/models/user.model.js";
 
 export const PLAN_FEATURES_LIST = [
   "link_creation",

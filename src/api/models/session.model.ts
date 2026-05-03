@@ -1,7 +1,7 @@
 import { model, Schema, type InferSchemaType, type Types } from "mongoose";
 
-import { DEVICE_TYPES } from "./clickEvent.model";
-import { LINK_PLATFORMS } from "./link.model";
+import { DEVICE_TYPES } from "./clickEvent.model.js";
+import { LINK_PLATFORMS } from "./link.model.js";
 
 const sessionSchema = new Schema(
   {

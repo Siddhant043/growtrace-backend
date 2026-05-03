@@ -1,4 +1,4 @@
-import type { AttributionTouchpointType } from "../infrastructure/queue";
+import type { AttributionTouchpointType } from "../infrastructure/queue.js";
 
 export interface BehaviorEventForAttribution {
   eventType: string;

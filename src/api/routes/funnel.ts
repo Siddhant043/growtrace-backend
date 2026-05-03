@@ -5,17 +5,17 @@ import {
   getLinkFunnel,
   getPlatformFunnel,
   listLinkFunnels,
-} from "../controllers/funnel.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { requirePlan } from "../middlewares/requirePlan";
-import { validateRequest } from "../middlewares/validateRequest";
+} from "../controllers/funnel.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requirePlan } from "../middlewares/requirePlan.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   campaignFunnelRequestSchema,
   linkFunnelRequestSchema,
   listLinkFunnelsRequestSchema,
   platformFunnelRequestSchema,
-} from "../validators/funnel.validator";
+} from "../validators/funnel.validator.js";
 
 const funnelRouter = Router();
 funnelRouter.use(authenticate, requirePlan("pro"));

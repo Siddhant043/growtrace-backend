@@ -1,7 +1,7 @@
 import { Queue, Worker, type Processor, type WorkerOptions } from "bullmq";
 import IORedis, { type Redis } from "ioredis";
 
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 
 export const BEHAVIOR_EVENTS_QUEUE_NAME = "behaviorEvents";
 export const METRICS_AGGREGATION_QUEUE_NAME = "metricsAggregation";

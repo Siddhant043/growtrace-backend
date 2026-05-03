@@ -1,4 +1,4 @@
-import type { AlertType } from "../api/models/alert.model";
+import type { AlertType } from "../api/models/alert.model.js";
 
 export interface AlertEmailViewModel {
   alertType: AlertType;

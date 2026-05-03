@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs'
 import type { Request, Response } from 'express'
 
-import { UserModel } from '../models/user.model'
-import type { AuthenticatedRequest } from '../middlewares/authenticate'
-import { getEffectivePlanForUser } from '../../services/planInfo.service'
-import type { UpdatePasswordRequestBody } from '../validators/auth.validator'
+import { UserModel } from '../models/user.model.js'
+import type { AuthenticatedRequest } from '../middlewares/authenticate.js'
+import { getEffectivePlanForUser } from '../../services/planInfo.service.js'
+import type { UpdatePasswordRequestBody } from '../validators/auth.validator.js'
 
 const mapUserProfileResponse = (user: {
   _id: { toString(): string }

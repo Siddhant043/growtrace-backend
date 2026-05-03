@@ -4,14 +4,14 @@ import {
   createAudienceAggregationWorker,
   enqueuePerUserAlertsDetectionJob,
   type AudienceAggregationJobPayload,
-} from "../infrastructure/queue";
+} from "../infrastructure/queue.js";
 import {
   listActiveUserIdsInAggregationWindow,
   runAudienceUserAggregationForUser,
-} from "../services/audienceUserAggregation.service";
-import { runAudienceCohortAggregationForUser } from "../services/audienceCohortAggregation.service";
-import { publishUserAnalyticsSnapshot } from "../services/insightsPublisher.service";
-import { getCurrentUtcDateString } from "../utils/dateBounds.utils";
+} from "../services/audienceUserAggregation.service.js";
+import { runAudienceCohortAggregationForUser } from "../services/audienceCohortAggregation.service.js";
+import { publishUserAnalyticsSnapshot } from "../services/insightsPublisher.service.js";
+import { getCurrentUtcDateString } from "../utils/dateBounds.utils.js";
 
 interface AudienceAggregationRunSummary {
   attemptedUserCount: number;

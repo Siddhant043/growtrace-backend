@@ -4,12 +4,12 @@ import {
   createFunnelAggregationWorker,
   FUNNEL_AGGREGATION_SCHEDULER_IDS,
   type FunnelAggregationJobPayload,
-} from "../infrastructure/queue";
-import { aggregateAllFunnelScopesForDate } from "../services/funnelAggregation.service";
+} from "../infrastructure/queue.js";
+import { aggregateAllFunnelScopesForDate } from "../services/funnelAggregation.service.js";
 import {
   getCurrentUtcDateString,
   getPreviousUtcDateString,
-} from "../utils/dateBounds.utils";
+} from "../utils/dateBounds.utils.js";
 
 const resolveTargetDateForJob = (
   jobPayload: FunnelAggregationJobPayload,

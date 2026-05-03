@@ -1,6 +1,6 @@
 import { model, Schema, type InferSchemaType, type Types } from "mongoose";
 
-import { LINK_PLATFORMS } from "./link.model";
+import { LINK_PLATFORMS } from "./link.model.js";
 
 const linkFunnelDailySchema = new Schema(
   {

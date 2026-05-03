@@ -1,19 +1,19 @@
 import type { AnyBulkWriteOperation, PipelineStage } from "mongoose";
 import { Types } from "mongoose";
 
-import { SessionModel } from "../api/models/session.model";
+import { SessionModel } from "../api/models/session.model.js";
 import {
   UsersAggregatedModel,
   type UsersAggregatedDocument,
-} from "../api/models/usersAggregated.model";
+} from "../api/models/usersAggregated.model.js";
 import {
   ENGAGED_DURATION_THRESHOLD_SECONDS,
   ENGAGED_SCROLL_DEPTH_THRESHOLD,
   ENGAGEMENT_SCROLL_WEIGHT,
   ENGAGEMENT_TIME_WEIGHT,
   SESSION_DURATION_CAP_SECONDS,
-} from "../api/constants/engagement";
-import { env } from "../config/env";
+} from "../api/constants/engagement.js";
+import { env } from "../config/env.js";
 
 interface UserAggregationPipelineRow {
   _id: {

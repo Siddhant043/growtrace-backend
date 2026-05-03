@@ -1,7 +1,7 @@
 import {
   ENGAGEMENT_SCROLL_WEIGHT,
   ENGAGEMENT_TIME_WEIGHT,
-} from "../api/constants/engagement";
+} from "../api/constants/engagement.js";
 
 export type EngagementMetricsSummary = {
   totalSessions: number;

@@ -1,11 +1,11 @@
 import {
   ANALYTICS_INSIGHTS_ROUTING_KEY,
   publishToAnalyticsExchange,
-} from "../infrastructure/rabbitmq";
+} from "../infrastructure/rabbitmq.js";
 import {
   buildUserAnalyticsSnapshot,
   findActiveUserIdsForDate,
-} from "./insightsSnapshot.service";
+} from "./insightsSnapshot.service.js";
 
 const SNAPSHOT_WINDOW_DAYS_DEFAULT = 7;
 

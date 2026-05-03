@@ -5,7 +5,7 @@ import {
   SUBSCRIPTION_TYPES,
   type SubscriptionStatus,
   type SubscriptionType,
-} from "./user.model";
+} from "./user.model.js";
 
 export const SUBSCRIPTION_BILLING_INTERVALS = ["monthly", "yearly"] as const;
 export type SubscriptionBillingInterval =

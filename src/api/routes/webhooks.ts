@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { handleRazorpayWebhook } from "../controllers/webhooks.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
+import { handleRazorpayWebhook } from "../controllers/webhooks.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
 
 const webhooksRouter = Router();
 

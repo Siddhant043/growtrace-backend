@@ -4,12 +4,12 @@ import {
   getAttributionSummary,
   getJourneyDetailForUserTrackingId,
   getRecentJourneys,
-} from "../../services/attribution.read.service";
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
+} from "../../services/attribution.read.service.js";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
 import type {
   GetAttributionJourneyDetailRequestParams,
   GetAttributionRecentJourneysRequestQuery,
-} from "../validators/attribution.validator";
+} from "../validators/attribution.validator.js";
 
 const requireAuthenticatedUserId = (request: Request): string => {
   const authenticatedUser = (request as AuthenticatedRequest).authenticatedUser;

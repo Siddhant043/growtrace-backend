@@ -1,6 +1,6 @@
 import { model, Schema, type InferSchemaType, type Types } from "mongoose";
 
-import { TOUCHPOINT_TYPES, type TouchpointType } from "./touchpoint.model";
+import { TOUCHPOINT_TYPES, type TouchpointType } from "./touchpoint.model.js";
 
 const journeyTouchpointEmbedSchema = new Schema(
   {

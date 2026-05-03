@@ -1,7 +1,7 @@
 import {
   formatDateAsUtcIsoDate,
   isValidIsoDate,
-} from "./dateBounds.utils";
+} from "./dateBounds.utils.js";
 
 const DEFAULT_RANGE_DAYS = 30;
 

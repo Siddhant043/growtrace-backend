@@ -1,9 +1,9 @@
 import type { Request } from "express";
 
-import { ClickEventModel } from "../api/models/clickEvent.model";
-import type { LinkDocument } from "../api/models/link.model";
-import { getCountryFromIP } from "../api/utils/getCountryFromIP";
-import { parseUserAgent } from "../api/utils/parseUserAgent";
+import { ClickEventModel } from "../api/models/clickEvent.model.js";
+import type { LinkDocument } from "../api/models/link.model.js";
+import { getCountryFromIP } from "../api/utils/getCountryFromIP.js";
+import { parseUserAgent } from "../api/utils/parseUserAgent.js";
 
 type TrackingLinkPayload = Pick<
   LinkDocument,

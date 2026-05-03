@@ -2,8 +2,8 @@ import {
   ATTRIBUTION_TOUCHPOINT_JOB_NAME,
   getAttributionQueue,
   type AttributionTouchpointJobPayload,
-} from "../infrastructure/queue";
-import { computeTouchpointDedupeKey } from "../utils/attribution.dedupe";
+} from "../infrastructure/queue.js";
+import { computeTouchpointDedupeKey } from "../utils/attribution.dedupe.js";
 
 export const enqueueAttributionTouchpoint = async (
   jobPayload: AttributionTouchpointJobPayload,

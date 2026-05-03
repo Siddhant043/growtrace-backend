@@ -5,7 +5,7 @@ import {
   AlertModel,
   type AlertDocument,
   type AlertType,
-} from "../api/models/alert.model";
+} from "../api/models/alert.model.js";
 
 export interface AlertListItem {
   id: string;

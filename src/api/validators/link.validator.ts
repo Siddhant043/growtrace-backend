@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { LINK_PLATFORMS } from "../models/link.model";
+import { LINK_PLATFORMS } from "../models/link.model.js";
 
 const linkPlatformSchema = z.enum(LINK_PLATFORMS);
 const sortBySchema = z.enum(["createdAt", "shortCode", "platform"]);

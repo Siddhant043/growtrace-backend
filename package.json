@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "test:watch": "vitest",
     "test": "vitest run",
-    "start": "tsx src/server.ts",
+    "start": "node dist/src/server.js",
     "dev": "nodemon --exec \"tsx src/server.ts\"",
     "backfill:session-meta": "tsx src/workers/scripts/backfillSessionPlatformCampaign.ts",
     "backfill:click-campaign": "tsx src/workers/scripts/backfillClickEventCampaign.ts",

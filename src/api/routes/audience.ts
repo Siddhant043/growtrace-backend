@@ -6,18 +6,18 @@ import {
   getAudienceInsightsForCurrentUser,
   getAudienceSegmentsForCurrentUser,
   getAudienceUsersForCurrentUser,
-} from "../controllers/audience.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
-import { authenticate } from "../middlewares/authenticate";
-import { requirePlan } from "../middlewares/requirePlan";
-import { validateRequest } from "../middlewares/validateRequest";
+} from "../controllers/audience.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requirePlan } from "../middlewares/requirePlan.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
 import {
   getAudienceCohortsRequestSchema,
   getAudienceEngagementHistogramRequestSchema,
   getAudienceInsightsRequestSchema,
   getAudienceSegmentsRequestSchema,
   getAudienceUsersRequestSchema,
-} from "../validators/audience.validator";
+} from "../validators/audience.validator.js";
 
 const audienceRouter = Router();
 audienceRouter.use(authenticate, requirePlan("pro"));

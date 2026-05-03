@@ -3,22 +3,22 @@ import type { Request, Response } from "express";
 import {
   generateAndPersistWeeklyReport,
   type WeeklyReportPayload,
-} from "../../services/weeklyReportGenerator.service";
+} from "../../services/weeklyReportGenerator.service.js";
 import {
   computePreviousIsoWeekWindow,
   computeWeekWindowEndingOnDate,
-} from "../../utils/weeklyReports.dateWindow";
+} from "../../utils/weeklyReports.dateWindow.js";
 import {
   getLatestWeeklyReportForUser,
   getWeeklyReportForUserByWeekStart,
   listWeeklyReportsForUser,
-} from "../../services/reports.read.service";
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
+} from "../../services/reports.read.service.js";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
 import type {
   GetReportByWeekStartRequestParams,
   ListReportsRequestQuery,
   PreviewReportRequestBody,
-} from "../validators/reports.validator";
+} from "../validators/reports.validator.js";
 
 const getAuthenticatedRequest = (request: Request): AuthenticatedRequest =>
   request as AuthenticatedRequest;

@@ -1,23 +1,23 @@
 import { Types } from "mongoose";
 
-import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
-import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model";
-import { type LinkPlatform } from "../api/models/link.model";
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
+import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model.js";
+import { type LinkPlatform } from "../api/models/link.model.js";
 import {
   resolveDateRange,
   type DateRangeInput,
   type ResolvedDateRange,
-} from "../utils/dateRange.utils";
+} from "../utils/dateRange.utils.js";
 import {
   buildRangeRollupSumStage,
   computeEngagementMetricsSummaryFromRollup,
   type AggregatedRangeRollupRow,
-} from "../utils/metricsRollup.utils";
+} from "../utils/metricsRollup.utils.js";
 import {
   listLinkMetricsForRange,
   type LinkMetricsListItem,
   type LinkMetricsListResponse,
-} from "./metrics.service";
+} from "./metrics.service.js";
 
 export type EngagementTrendPoint = {
   date: string;

@@ -1,23 +1,23 @@
 import { Types } from "mongoose";
 
-import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
-import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model";
-import { CampaignMetricsDailyModel } from "../api/models/campaignMetricsDaily.model";
-import { LinkModel, type LinkPlatform } from "../api/models/link.model";
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
+import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model.js";
+import { CampaignMetricsDailyModel } from "../api/models/campaignMetricsDaily.model.js";
+import { LinkModel, type LinkPlatform } from "../api/models/link.model.js";
 import {
   resolveDateRange,
   type DateRangeInput,
   type ResolvedDateRange,
-} from "../utils/dateRange.utils";
+} from "../utils/dateRange.utils.js";
 import {
   buildRangeRollupGroupStage,
   computeEngagementMetricsSummaryFromRollup,
   type AggregatedRangeRollupRow,
   type EngagementMetricsSummary,
-} from "../utils/metricsRollup.utils";
+} from "../utils/metricsRollup.utils.js";
 
-export type { DateRangeInput, ResolvedDateRange } from "../utils/dateRange.utils";
-export type { EngagementMetricsSummary } from "../utils/metricsRollup.utils";
+export type { DateRangeInput, ResolvedDateRange } from "../utils/dateRange.utils.js";
+export type { EngagementMetricsSummary } from "../utils/metricsRollup.utils.js";
 
 export type EngagementMetricsRangeResponse = ResolvedDateRange &
   EngagementMetricsSummary;

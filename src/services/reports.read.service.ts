@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 import {
   WeeklyReportModel,
   type WeeklyReportDocument,
-} from "../api/models/weeklyReport.model";
+} from "../api/models/weeklyReport.model.js";
 
 type WeeklyReportListFilter = {
   userId: Types.ObjectId;

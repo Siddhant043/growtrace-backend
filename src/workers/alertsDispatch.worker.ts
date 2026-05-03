@@ -1,26 +1,26 @@
 import type { Job, Worker } from "bullmq";
 import { Types } from "mongoose";
 
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 import {
   AlertModel,
   type AlertChannel,
   type AlertDocument,
   type AlertType,
-} from "../api/models/alert.model";
-import { UserModel } from "../api/models/user.model";
-import { sendAlertEmail } from "../infrastructure/email";
+} from "../api/models/alert.model.js";
+import { UserModel } from "../api/models/user.model.js";
+import { sendAlertEmail } from "../infrastructure/email.js";
 import {
   createAlertsDispatchWorker,
   type AlertsDispatchJobPayload,
-} from "../infrastructure/queue";
+} from "../infrastructure/queue.js";
 import {
   getNotificationPreferencesForUser,
   resolveDispatchChannelsForAlert,
   type NormalizedNotificationPreferences,
-} from "../services/alertPreferences.service";
-import { publishInAppNotification } from "../services/notificationGateway.service";
-import type { AlertEmailViewModel } from "../templates/alert.email";
+} from "../services/alertPreferences.service.js";
+import { publishInAppNotification } from "../services/notificationGateway.service.js";
+import type { AlertEmailViewModel } from "../templates/alert.email.js";
 
 interface AlertsDispatchJobOutcome {
   alertId: string | null;

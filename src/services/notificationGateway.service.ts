@@ -1,4 +1,4 @@
-import type { AlertDocument } from "../api/models/alert.model";
+import type { AlertDocument } from "../api/models/alert.model.js";
 
 /**
  * Stub gateway for real-time notification delivery. Today this is a no-op

@@ -1,23 +1,23 @@
 import { Types } from "mongoose";
 
-import { InsightReadModel } from "../api/models/insightRead.model";
-import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model";
-import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model";
-import { UserModel } from "../api/models/user.model";
+import { InsightReadModel } from "../api/models/insightRead.model.js";
+import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
+import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model.js";
+import { UserModel } from "../api/models/user.model.js";
 import {
   WeeklyReportModel,
   type WeeklyReportDocument,
-} from "../api/models/weeklyReport.model";
-import { formatDateAsUtcIsoDate } from "../utils/dateBounds.utils";
+} from "../api/models/weeklyReport.model.js";
+import { formatDateAsUtcIsoDate } from "../utils/dateBounds.utils.js";
 import {
   buildWeeklyReportCopy,
   extractFirstName,
   type WeeklyReportCopyOutput,
-} from "../utils/weeklyReports.copy";
+} from "../utils/weeklyReports.copy.js";
 import {
   computeWeekWindowBefore,
   type WeeklyReportDateWindow,
-} from "../utils/weeklyReports.dateWindow";
+} from "../utils/weeklyReports.dateWindow.js";
 
 const TOP_INSIGHTS_LIMIT = 5;
 const TOP_RECOMMENDATIONS_LIMIT = 5;

@@ -8,8 +8,10 @@
     "build": "tsc -p tsconfig.json",
     "test:watch": "vitest",
     "test": "vitest run",
-    "start": "tsx src/server.ts",
+    "start": "node dist/src/server.js",
     "dev": "nodemon --exec \"tsx src/server.ts\"",
+    "backfill:session-meta": "tsx src/workers/scripts/backfillSessionPlatformCampaign.ts",
+    "backfill:click-campaign": "tsx src/workers/scripts/backfillClickEventCampaign.ts",
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "check": "npm run lint && npm run format"
@@ -20,9 +22,12 @@
   "dependencies": {
     "@babel/parser": "^7.29.2",
     "@babel/traverse": "^7.29.0",
+    "@bull-board/api": "^7.0.0",
+    "@bull-board/express": "^7.0.0",
     "@types/amqplib": "^0.10.8",
     "amqplib": "^1.0.3",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.76.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "crypto": "^1.0.1",
@@ -37,6 +42,7 @@
     "morgan": "^1.10.1",
     "nanoid": "^5.1.9",
     "nodemailer": "^8.0.6",
+    "razorpay": "^2.9.6",
     "zod": "^4.3.6"
   },
   "devDependencies": {

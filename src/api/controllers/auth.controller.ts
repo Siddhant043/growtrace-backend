@@ -3,22 +3,22 @@ import type { Request, Response } from "express";
 import { randomBytes } from "node:crypto";
 import { Types } from "mongoose";
 
-import { env } from "../../config/env";
+import { env } from "../../config/env.js";
 import {
   sendPasswordResetEmail,
   sendPasswordUpdatedEmail,
-} from "../../infrastructure/email";
-import { connectToRedis } from "../../infrastructure/redis";
-import { UserModel, type AuthType, type UserType } from "../models/user.model";
+} from "../../infrastructure/email.js";
+import { connectToRedis } from "../../infrastructure/redis.js";
+import { UserModel, type AuthType, type UserType } from "../models/user.model.js";
 import type {
   ForgotPasswordRequestBody,
   LoginRequestBody,
   ResetPasswordRequestBody,
   ResetPasswordRequestQuery,
   SignupRequestBody,
-} from "../validators/auth.validator";
-import { signAuthToken } from "../utils/jwt";
-import { verifyGoogleIdToken } from "../utils/googleAuth";
+} from "../validators/auth.validator.js";
+import { signAuthToken } from "../utils/jwt.js";
+import { verifyGoogleIdToken } from "../utils/googleAuth.js";
 
 type ApiError = Error & { statusCode: number };
 type AuthUserRecord = {
@@ -27,6 +27,11 @@ type AuthUserRecord = {
   email: string;
   userType: UserType;
   isDeleted: boolean;
+  imageUrl?: string | null;
+  subscriptionStartDate?: Date | null;
+  subscriptionEndDate?: Date | null;
+  isLifetimeSubscription?: boolean;
+  isSubscriptionActive?: boolean;
   authType?: AuthType;
   authMethods?: AuthType[];
   password?: string;
@@ -41,23 +46,58 @@ const createApiError = (message: string, statusCode: number): ApiError => {
   return apiError;
 };
 
+const normalizeOptionalString = (value: unknown): string | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalizedValue = value.trim();
+  return normalizedValue.length > 0 ? normalizedValue : null;
+};
+
+const normalizeRequiredString = (
+  value: unknown,
+  fallbackValue: string,
+): string => {
+  const normalizedValue = normalizeOptionalString(value);
+  return normalizedValue ?? fallbackValue;
+};
+
 const mapUserForAuthResponse = (user: {
   _id: { toString(): string };
   fullName: string;
   email: string;
   userType: UserType;
   isDeleted: boolean;
+  imageUrl?: string | null;
+  subscriptionStartDate?: Date | null;
+  subscriptionEndDate?: Date | null;
+  isLifetimeSubscription?: boolean;
+  isSubscriptionActive?: boolean;
   authType?: AuthType;
   authMethods?: AuthType[];
-}) => ({
+}) => {
+  const normalizedEmail = normalizeRequiredString(user.email, "unknown@growtrace.local");
+  const normalizedFullName = normalizeRequiredString(
+    user.fullName,
+    normalizedEmail,
+  );
+
+  return {
   id: user._id.toString(),
-  fullName: user.fullName,
-  email: user.email,
+  fullName: normalizedFullName,
+  email: normalizedEmail,
   userType: user.userType,
   isDeleted: user.isDeleted,
+  imageUrl: normalizeOptionalString(user.imageUrl),
+  subscriptionStartDate: user.subscriptionStartDate ?? null,
+  subscriptionEndDate: user.subscriptionEndDate ?? null,
+  isLifetimeSubscription: user.isLifetimeSubscription ?? false,
+  isSubscriptionActive: user.isSubscriptionActive ?? false,
   authType: user.authType ?? "email",
   authMethods: user.authMethods ?? [user.authType ?? "email"],
-});
+  };
+};
 
 const mergeAuthMethods = (
   currentMethods: AuthType[] | undefined,
@@ -114,6 +154,9 @@ export const signup = async (
       existingUser.emailVerified =
         existingUser.emailVerified || verifiedGoogleIdentity.emailVerified;
       existingUser.authType = existingUser.authType ?? "email";
+      if (verifiedGoogleIdentity.imageUrl) {
+        existingUser.imageUrl = verifiedGoogleIdentity.imageUrl;
+      }
       if (!existingUser.fullName?.trim().length) {
         existingUser.fullName = verifiedGoogleIdentity.fullName;
       }
@@ -132,6 +175,7 @@ export const signup = async (
         authMethods: ["google"],
         googleSub: verifiedGoogleIdentity.googleSub,
         emailVerified: verifiedGoogleIdentity.emailVerified,
+        imageUrl: verifiedGoogleIdentity.imageUrl,
       })) as unknown as AuthUserRecord;
     }
   } else {
@@ -226,6 +270,9 @@ export const login = async (
       existingUser.googleSub = verifiedGoogleIdentity.googleSub;
       existingUser.emailVerified =
         existingUser.emailVerified || verifiedGoogleIdentity.emailVerified;
+      if (verifiedGoogleIdentity.imageUrl) {
+        existingUser.imageUrl = verifiedGoogleIdentity.imageUrl;
+      }
       if (!existingUser.authType) {
         existingUser.authType = "google";
       }
@@ -245,6 +292,7 @@ export const login = async (
         authMethods: ["google"],
         googleSub: verifiedGoogleIdentity.googleSub,
         emailVerified: verifiedGoogleIdentity.emailVerified,
+        imageUrl: verifiedGoogleIdentity.imageUrl,
       })) as unknown as AuthUserRecord;
     }
   } else {
@@ -352,11 +400,14 @@ export const resetPassword = async (
     unknown,
     unknown,
     ResetPasswordRequestBody,
-    ResetPasswordRequestQuery
+    Partial<ResetPasswordRequestQuery>
   >,
   response: Response,
 ): Promise<void> => {
   const { secret } = request.query;
+  if (!secret) {
+    throw createApiError("Reset secret is invalid or expired", 401);
+  }
   const { password } = request.body;
   const redisClient = await connectToRedis();
   const resetSecretRedisKey = getPasswordResetRedisKey(secret);

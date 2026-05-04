@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { redirectUsingShortCode } from "../controllers/redirect.controller";
-import { asyncHandler } from "../middlewares/asyncHandler";
+import { redirectUsingShortCode } from "../controllers/redirect.controller.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
 
 const redirectRouter = Router();
 

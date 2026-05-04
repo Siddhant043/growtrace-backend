@@ -1,7 +1,11 @@
 import type { Request, Response } from "express";
 
-import { LinkModel } from "../models/link.model";
-import { logClick } from "../../services/tracking.service";
+import { LinkModel } from "../models/link.model.js";
+import { logClick } from "../../services/tracking.service.js";
+import { enqueueAttributionTouchpoint } from "../../services/attributionProducer.service.js";
+import { appendTrackingParam } from "../utils/appendTrackingParam.js";
+import { isLikelyBot } from "../utils/isLikelyBot.js";
+import { ensureUserTrackingIdOnResponse } from "../utils/userTrackingCookie.js";
 
 type ApiError = Error & { statusCode: number };
 
@@ -28,12 +32,45 @@ export const redirectUsingShortCode = async (
     throw createApiError("Short link not found", 404);
   }
 
-  void logClick(link, request).catch((error: unknown) => {
-    console.error("Click logging failed", {
-      shortCode: requestedShortCode,
-      error,
-    });
-  });
+  const requesterUserAgent = request.get("user-agent");
+  const requesterIsLikelyBot = isLikelyBot(requesterUserAgent);
 
-  response.redirect(302, link.originalUrl);
+  const clickTimestamp = new Date();
+  const userTrackingId = ensureUserTrackingIdOnResponse(request, response);
+
+  if (!requesterIsLikelyBot) {
+    void logClick(link, request, clickTimestamp, userTrackingId).catch(
+      (error: unknown) => {
+        console.error("Click logging failed", {
+          shortCode: requestedShortCode,
+          error,
+        });
+      },
+    );
+
+    void enqueueAttributionTouchpoint({
+      userTrackingId,
+      userId: link.userId.toString(),
+      sessionId: null,
+      linkId: link._id.toString(),
+      platform: link.platform ?? null,
+      campaign: link.campaign ?? null,
+      type: "click",
+      timestampMs: clickTimestamp.getTime(),
+    }).catch((enqueueError: unknown) => {
+      console.error("Attribution click enqueue failed", {
+        shortCode: requestedShortCode,
+        error: enqueueError,
+      });
+    });
+  }
+
+  const trackedRedirectUrl = appendTrackingParam(
+    link.originalUrl,
+    link._id.toString(),
+    clickTimestamp.getTime(),
+    userTrackingId,
+  );
+
+  response.redirect(302, trackedRedirectUrl);
 };

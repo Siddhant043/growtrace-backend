@@ -1,11 +1,11 @@
-import { ClickEventModel } from "../api/models/clickEvent.model";
-import { LinkModel } from "../api/models/link.model";
+import { ClickEventModel } from "../api/models/clickEvent.model.js";
+import { LinkModel } from "../api/models/link.model.js";
 import {
   calculatePercentage,
   getRangeStartDate,
   type TrendRange,
   toObjectId,
-} from "./analytics.helpers";
+} from "../utils/analytics.helpers.js";
 
 export type PlatformStat = {
   platform: string;

@@ -5,15 +5,15 @@ import {
   login,
   resetPassword,
   signup,
-} from '../controllers/auth.controller'
-import { asyncHandler } from '../middlewares/asyncHandler'
-import { validateRequest } from '../middlewares/validateRequest'
+} from '../controllers/auth.controller.js'
+import { asyncHandler } from '../middlewares/asyncHandler.js'
+import { validateRequest } from '../middlewares/validateRequest.js'
 import {
   loginRequestSchema,
   forgotPasswordRequestSchema,
   resetPasswordRequestSchema,
   signupRequestSchema,
-} from '../validators/auth.validator'
+} from '../validators/auth.validator.js'
 
 const authRouter = Router()
 

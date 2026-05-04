@@ -1,12 +1,13 @@
 import { OAuth2Client } from "google-auth-library";
 
-import { env } from "../../config/env";
+import { env } from "../../config/env.js";
 
 export type VerifiedGoogleIdentity = {
   email: string;
   fullName: string;
   googleSub: string;
   emailVerified: boolean;
+  imageUrl: string | null;
 };
 
 const googleOAuthClient = new OAuth2Client();
@@ -38,5 +39,6 @@ export const verifyGoogleIdToken = async (
     fullName: tokenPayload.name?.trim().length ? tokenPayload.name : tokenPayload.email,
     googleSub: tokenPayload.sub,
     emailVerified: tokenPayload.email_verified === true,
+    imageUrl: tokenPayload.picture?.trim().length ? tokenPayload.picture : null,
   };
 };

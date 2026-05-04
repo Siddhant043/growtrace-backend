@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
-import { getDashboardPayload } from "../../services/dashboard.service";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
+import { getDashboardPayload } from "../../services/dashboard.service.js";
 
 const getAuthenticatedRequest = (request: Request): AuthenticatedRequest =>
   request as AuthenticatedRequest;

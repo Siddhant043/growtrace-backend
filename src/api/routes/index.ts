@@ -1,10 +1,20 @@
 import { Router } from "express";
 
-import analyticsRouter from "./analytics";
-import authRouter from "./auth";
-import dashboardRouter from "./dashboard";
-import linkRouter from "./link";
-import userRouter from "./users";
+import analyticsRouter from "./analytics.js";
+import attributionRouter from "./attribution.js";
+import audienceRouter from "./audience.js";
+import authRouter from "./auth.js";
+import dashboardRouter from "./dashboard.js";
+import funnelRouter from "./funnel.js";
+import linkRouter from "./link.js";
+import metricsRouter from "./metrics.js";
+import notificationsRouter from "./notifications.js";
+import paymentsRouter from "./payments.js";
+import reportsRouter from "./reports.js";
+import sessionRouter from "./session.js";
+import trackRouter from "./track.js";
+import userRouter from "./users.js";
+import webhooksRouter from "./webhooks.js";
 
 const apiRouter = Router();
 
@@ -13,5 +23,15 @@ apiRouter.use("/users", userRouter);
 apiRouter.use("/links", linkRouter);
 apiRouter.use("/analytics", analyticsRouter);
 apiRouter.use("/dashboard", dashboardRouter);
+apiRouter.use("/metrics", metricsRouter);
+apiRouter.use("/funnel", funnelRouter);
+apiRouter.use("/sessions", sessionRouter);
+apiRouter.use("/reports", reportsRouter);
+apiRouter.use("/attribution", attributionRouter);
+apiRouter.use("/audience", audienceRouter);
+apiRouter.use("/notifications", notificationsRouter);
+apiRouter.use("/payments", paymentsRouter);
+apiRouter.use("/webhooks", webhooksRouter);
+apiRouter.use("/track", trackRouter);
 
 export default apiRouter;

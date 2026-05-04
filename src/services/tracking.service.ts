@@ -1,13 +1,13 @@
 import type { Request } from "express";
 
-import { ClickEventModel } from "../api/models/clickEvent.model";
-import type { LinkDocument } from "../api/models/link.model";
-import { getCountryFromIP } from "../api/utils/getCountryFromIP";
-import { parseUserAgent } from "../api/utils/parseUserAgent";
+import { ClickEventModel } from "../api/models/clickEvent.model.js";
+import type { LinkDocument } from "../api/models/link.model.js";
+import { getCountryFromIP } from "../api/utils/getCountryFromIP.js";
+import { parseUserAgent } from "../api/utils/parseUserAgent.js";
 
 type TrackingLinkPayload = Pick<
   LinkDocument,
-  "_id" | "userId" | "platform" | "postId"
+  "_id" | "userId" | "platform" | "postId" | "campaign"
 >;
 
 const resolveClientIpAddress = (request: Request): string | undefined => {
@@ -23,6 +23,8 @@ const resolveClientIpAddress = (request: Request): string | undefined => {
 export const logClick = async (
   link: TrackingLinkPayload,
   request: Request,
+  clickTimestamp: Date = new Date(),
+  userTrackingId: string | null = null,
 ): Promise<void> => {
   const ipAddress = resolveClientIpAddress(request);
   const userAgentHeader = request.get("user-agent");
@@ -35,10 +37,12 @@ export const logClick = async (
     userId: link.userId,
     platform: link.platform,
     postId: link.postId,
-    timestamp: new Date(),
+    campaign: link.campaign ?? null,
+    timestamp: clickTimestamp,
     country,
     deviceType,
     browser,
     referrer: referrerHeader,
+    userTrackingId,
   });
 };

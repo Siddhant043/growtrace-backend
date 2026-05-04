@@ -1,0 +1,37 @@
+import { createBullBoard } from "@bull-board/api";
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import { ExpressAdapter } from "@bull-board/express";
+
+import {
+  getAlertsDetectionQueue,
+  getAlertsDispatchQueue,
+  getAttributionQueue,
+  getAudienceAggregationQueue,
+  getBehaviorEventsQueue,
+  getFunnelAggregationQueue,
+  getMetricsAggregationQueue,
+  getWeeklyReportsQueue,
+} from "./queue.js";
+
+export const BULL_BOARD_BASE_PATH = "/admin/queues";
+
+export const createBullBoardServerAdapter = (): ExpressAdapter => {
+  const expressAdapter = new ExpressAdapter();
+  expressAdapter.setBasePath(BULL_BOARD_BASE_PATH);
+
+  createBullBoard({
+    queues: [
+      new BullMQAdapter(getBehaviorEventsQueue()),
+      new BullMQAdapter(getMetricsAggregationQueue()),
+      new BullMQAdapter(getFunnelAggregationQueue()),
+      new BullMQAdapter(getWeeklyReportsQueue()),
+      new BullMQAdapter(getAttributionQueue()),
+      new BullMQAdapter(getAudienceAggregationQueue()),
+      new BullMQAdapter(getAlertsDetectionQueue()),
+      new BullMQAdapter(getAlertsDispatchQueue()),
+    ],
+    serverAdapter: expressAdapter,
+  });
+
+  return expressAdapter;
+};

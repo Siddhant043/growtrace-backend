@@ -36,6 +36,120 @@ const runtimeEnvironmentSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  WEEKLY_REPORTS_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+  WEEKLY_REPORTS_CRON: z.string().min(1).default("0 2 * * 0"),
+  WEEKLY_REPORTS_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(5),
+  WEEKLY_REPORTS_EMAIL_FROM: z
+    .string()
+    .email("WEEKLY_REPORTS_EMAIL_FROM must be a valid email address")
+    .optional(),
+  ATTRIBUTION_JOURNEY_WINDOW_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(180)
+    .default(7),
+  ATTRIBUTION_TOUCHPOINT_TTL_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3650)
+    .default(90),
+  ATTRIBUTION_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(8),
+  ATTRIBUTION_USER_COOKIE_NAME: z.string().min(1).default("gt_uid"),
+  ATTRIBUTION_USER_COOKIE_MAX_AGE_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3650)
+    .default(730),
+  AUDIENCE_AGGREGATION_WINDOW_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(365)
+    .default(30),
+  AUDIENCE_COHORT_WINDOW_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(365)
+    .default(90),
+  AUDIENCE_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(4),
+  AUDIENCE_HIGH_ENGAGEMENT_SCORE_MIN: z.coerce.number().min(0).default(50),
+  AUDIENCE_LOW_ENGAGEMENT_SCORE_MAX: z.coerce.number().min(0).default(20),
+  AUDIENCE_AGGREGATION_CRON: z.string().min(1).default("*/5 * * * *"),
+  ALERTS_DETECTION_CRON_HOURLY: z.string().min(1).default("0 * * * *"),
+  ALERTS_DETECTION_CRON_DAILY: z.string().min(1).default("0 6 * * *"),
+  ALERTS_ENGAGEMENT_DROP_THRESHOLD: z.coerce
+    .number()
+    .min(0)
+    .max(1)
+    .default(0.8),
+  ALERTS_TRAFFIC_SPIKE_MULTIPLIER: z.coerce.number().min(1).default(1.5),
+  ALERTS_DEDUP_WINDOW_HOURS: z.coerce.number().int().min(1).max(168).default(6),
+  ALERTS_NEW_USER_GRACE_DAYS: z.coerce.number().int().min(0).max(365).default(3),
+  ALERTS_MIN_SESSIONS_FOR_SIGNAL: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(1000)
+    .default(5),
+  ALERTS_DETECTION_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(4),
+  ALERTS_DISPATCH_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(8),
+  ALERTS_DETECTION_ACTIVE_WINDOW_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(60)
+    .default(7),
+  ALERTS_FROM_EMAIL: z
+    .string()
+    .email("ALERTS_FROM_EMAIL must be a valid email address")
+    .optional(),
+  RAZORPAY_KEY_ID: z.string().min(1, "RAZORPAY_KEY_ID is required"),
+  RAZORPAY_KEY_SECRET: z.string().min(1, "RAZORPAY_KEY_SECRET is required"),
+  RAZORPAY_WEBHOOK_SECRET: z
+    .string()
+    .min(1, "RAZORPAY_WEBHOOK_SECRET is required"),
+  RAZORPAY_PRO_MONTHLY_PLAN_ID: z
+    .string()
+    .min(1, "RAZORPAY_PRO_MONTHLY_PLAN_ID is required"),
+  RAZORPAY_PRO_YEARLY_PLAN_ID: z.string().min(1).optional(),
+  BILLING_GRACE_PERIOD_HOURS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(168)
+    .default(24),
 });
 
 const parsedRuntimeEnvironment = runtimeEnvironmentSchema.safeParse(

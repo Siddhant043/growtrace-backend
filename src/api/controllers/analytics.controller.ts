@@ -1,17 +1,31 @@
 import type { Request, Response } from "express";
 
-import type { AuthenticatedRequest } from "../middlewares/authenticate";
+import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
+import type { LinkPlatform } from "../models/link.model.js";
 import {
   compareAnalyticsByPlatform,
   getClickTrends,
   getOverview,
   getPlatformStats,
   getTopLinks,
-} from "../../services/analytics.service";
+} from "../../services/analytics.service.js";
 import {
   isSupportedTrendRange,
   type TrendRange,
-} from "../../services/analytics.helpers";
+} from "../../utils/analytics.helpers.js";
+import {
+  getContentPerformanceForRange,
+  getEngagementTrendsForRange,
+  getPlatformQualityComparison,
+} from "../../services/advancedAnalytics.service.js";
+import {
+  resolveDayCountForTrendRange,
+  type AnalyticsTrendRange,
+  type ContentPerformanceRequestQuery,
+  type EngagementTrendsRequestQuery,
+  type PlatformQualityRequestQuery,
+} from "../validators/analytics.validator.js";
+import { resolveDateRange } from "../../utils/dateRange.utils.js";
 
 const getAuthenticatedRequest = (request: Request): AuthenticatedRequest =>
   request as AuthenticatedRequest;
@@ -103,5 +117,98 @@ export const getAnalyticsComparison = async (
   response.status(200).json({
     success: true,
     data: comparisonData,
+  });
+};
+
+const buildAdvancedAnalyticsDateRange = (
+  trendRange: AnalyticsTrendRange,
+  fromDate?: string,
+  toDate?: string,
+) => {
+  const dayCountForTrendRange = resolveDayCountForTrendRange(trendRange);
+  return resolveDateRange(
+    { fromDate, toDate },
+    dayCountForTrendRange,
+  );
+};
+
+export const getEngagementTrends = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = getAuthenticatedRequest(request);
+  const validatedQuery = request.query as unknown as EngagementTrendsRequestQuery;
+
+  const resolvedRange = buildAdvancedAnalyticsDateRange(
+    validatedQuery.range,
+    validatedQuery.from,
+    validatedQuery.to,
+  );
+
+  const engagementTrends = await getEngagementTrendsForRange(
+    authenticatedRequest.authenticatedUser.id,
+    resolvedRange,
+    {
+      platform: validatedQuery.platform as LinkPlatform | undefined,
+      campaign: validatedQuery.campaign,
+    },
+  );
+
+  response.status(200).json({
+    success: true,
+    data: engagementTrends,
+  });
+};
+
+export const getPlatformQuality = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = getAuthenticatedRequest(request);
+  const validatedQuery = request.query as unknown as PlatformQualityRequestQuery;
+
+  const resolvedRange = buildAdvancedAnalyticsDateRange(
+    validatedQuery.range,
+    validatedQuery.from,
+    validatedQuery.to,
+  );
+
+  const platformQuality = await getPlatformQualityComparison(
+    authenticatedRequest.authenticatedUser.id,
+    resolvedRange,
+  );
+
+  response.status(200).json({
+    success: true,
+    data: platformQuality,
+  });
+};
+
+export const getContentPerformance = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = getAuthenticatedRequest(request);
+  const validatedQuery = request.query as unknown as ContentPerformanceRequestQuery;
+
+  const resolvedRange = buildAdvancedAnalyticsDateRange(
+    validatedQuery.range,
+    validatedQuery.from,
+    validatedQuery.to,
+  );
+
+  const contentPerformance = await getContentPerformanceForRange(
+    authenticatedRequest.authenticatedUser.id,
+    resolvedRange,
+    {
+      platform: validatedQuery.platform as LinkPlatform | undefined,
+      campaign: validatedQuery.campaign,
+      limit: validatedQuery.limit,
+    },
+  );
+
+  response.status(200).json({
+    success: true,
+    data: contentPerformance,
   });
 };

@@ -1,7 +1,7 @@
 import jwt, { type SignOptions } from 'jsonwebtoken'
 
-import { env } from '../../config/env'
-import type { UserType } from '../models/user.model'
+import { env } from '../../config/env.js'
+import type { UserType } from '../models/user.model.js'
 
 export type AuthTokenPayload = {
   sub: string

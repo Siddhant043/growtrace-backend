@@ -1,14 +1,14 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 
-import { ClickEventModel } from "../../src/api/models/clickEvent.model";
-import { LinkModel } from "../../src/api/models/link.model";
+import { ClickEventModel } from "../../src/api/models/clickEvent.model.js";
+import { LinkModel } from "../../src/api/models/link.model.js";
 import {
   compareAnalyticsByPlatform,
   getClickTrends,
   getOverview,
   getPlatformStats,
   getTopLinks,
-} from "../../src/services/analytics.service";
+} from "../../src/services/analytics.service.js";
 
 describe("analytics.service", () => {
   afterEach(() => {

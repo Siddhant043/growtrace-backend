@@ -75,9 +75,8 @@ app.use(
         typeof request.url === "string" &&
         request.url.startsWith("/api/webhooks/")
       ) {
-        (request as Request & { rawBody?: Buffer }).rawBody = Buffer.from(
-          rawBuffer,
-        );
+        (request as Request & { rawBody?: Buffer }).rawBody =
+          Buffer.from(rawBuffer);
       }
     },
   }),
@@ -87,8 +86,8 @@ const shouldEnableRateLimiting = !["development", "test"].includes(env.ENV);
 if (shouldEnableRateLimiting) {
   app.use(
     rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      limit: 100, // Limit each IP to 100 requests per `windowMs`
+      windowMs: 10 * 60 * 1000, // 10 minutes
+      limit: 500, // Limit each IP to 500 requests per `windowMs`
       message: "Too many requests, please try again later.",
       standardHeaders: true,
       legacyHeaders: false,

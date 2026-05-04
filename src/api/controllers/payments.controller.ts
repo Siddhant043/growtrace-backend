@@ -41,7 +41,7 @@ const createApiError = (
 const PRO_BILLING_TOTAL_COUNT = 12;
 
 const ACTIVE_SUBSCRIPTION_STATUSES = [
-  "created",
+  // "created",
   "authenticated",
   "active",
   "pending",

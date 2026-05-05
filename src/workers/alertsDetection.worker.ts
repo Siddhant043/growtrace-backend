@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import { env } from "../config/env.js";
 import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
 import {
+  ALERTS_DETECTION_QUEUE_NAME,
   buildAlertsDetectionJobId,
   createAlertsDetectionWorker,
   getAlertsDetectionQueue,
@@ -14,6 +15,7 @@ import {
   produceAlertsForUser,
   type ProduceAlertsForUserSummary,
 } from "../services/alertProducer.service.js";
+import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 
 interface DetectionFanOutSummary {
   attemptedUserCount: number;
@@ -125,6 +127,7 @@ export const processAlertsDetectionJob = async (
 export const startAlertsDetectionWorker =
   (): Worker<AlertsDetectionJobPayload> => {
     const worker = createAlertsDetectionWorker(processAlertsDetectionJob);
+    attachWorkerMonitoring(worker, ALERTS_DETECTION_QUEUE_NAME);
 
     worker.on("failed", (failedJob, failureError) => {
       console.error("[alertsDetection.worker] Job failed", {

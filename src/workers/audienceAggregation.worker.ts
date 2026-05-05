@@ -1,6 +1,7 @@
 import type { Job, Worker } from "bullmq";
 
 import {
+  AUDIENCE_AGGREGATION_QUEUE_NAME,
   createAudienceAggregationWorker,
   enqueuePerUserAlertsDetectionJob,
   type AudienceAggregationJobPayload,
@@ -11,6 +12,7 @@ import {
 } from "../services/audienceUserAggregation.service.js";
 import { runAudienceCohortAggregationForUser } from "../services/audienceCohortAggregation.service.js";
 import { publishUserAnalyticsSnapshot } from "../services/insightsPublisher.service.js";
+import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 import { getCurrentUtcDateString } from "../utils/dateBounds.utils.js";
 
 interface AudienceAggregationRunSummary {
@@ -135,6 +137,7 @@ export const startAudienceAggregationWorker =
     const worker = createAudienceAggregationWorker(
       processAudienceAggregationJob,
     );
+    attachWorkerMonitoring(worker, AUDIENCE_AGGREGATION_QUEUE_NAME);
 
     worker.on("failed", (failedJob, failureError) => {
       console.error("[audienceAggregation.worker] Job failed", {

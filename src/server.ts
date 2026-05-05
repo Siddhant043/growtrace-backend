@@ -23,6 +23,7 @@ import {
   createBullBoardServerAdapter,
 } from "./infrastructure/bullBoard.js";
 import {
+  scheduleRecurringAdminAnalyticsAggregation,
   scheduleRecurringAlertsDetection,
   scheduleRecurringAudienceAggregation,
   scheduleRecurringFunnelAggregation,
@@ -37,6 +38,11 @@ import { startAttributionWorker } from "./workers/attribution.worker.js";
 import { startAudienceAggregationWorker } from "./workers/audienceAggregation.worker.js";
 import { startAlertsDetectionWorker } from "./workers/alertsDetection.worker.js";
 import { startAlertsDispatchWorker } from "./workers/alertsDispatch.worker.js";
+import { startAdminAnalyticsAggregationWorkers } from "./workers/adminAnalyticsAggregation.worker.js";
+import {
+  startSystemMonitoringWorker,
+  stopSystemMonitoringWorker,
+} from "./workers/systemMonitoring.worker.js";
 
 const app = express();
 
@@ -256,6 +262,25 @@ const startServer = async (): Promise<void> => {
     `alertsDetection schedules upserted (hourly='${env.ALERTS_DETECTION_CRON_HOURLY}', daily='${env.ALERTS_DETECTION_CRON_DAILY}')`,
   );
 
+  const {
+    platformWorker: adminPlatformMetricsAggregationWorker,
+    usageWorker: adminUsageMetricsAggregationWorker,
+    funnelWorker: adminFunnelMetricsAggregationWorker,
+  } = startAdminAnalyticsAggregationWorkers();
+  console.log(
+    `admin analytics workers running (env=${env.ENV}, pid=${process.pid})`,
+  );
+
+  await scheduleRecurringAdminAnalyticsAggregation();
+  console.log(
+    `admin analytics aggregation schedules upserted (cron='${env.ADMIN_ANALYTICS_AGGREGATION_CRON}', queues=platform+usage+funnel)`,
+  );
+
+  const systemMonitoringInterval = startSystemMonitoringWorker();
+  console.log(
+    `system monitoring worker running (intervalMs=${String(systemMonitoringInterval ? 20000 : 0)})`,
+  );
+
   const httpServer = app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT}`);
     console.log(
@@ -276,7 +301,11 @@ const startServer = async (): Promise<void> => {
         audienceAggregationWorker.close(),
         alertsDetectionWorker.close(),
         alertsDispatchWorker.close(),
+        adminPlatformMetricsAggregationWorker.close(),
+        adminUsageMetricsAggregationWorker.close(),
+        adminFunnelMetricsAggregationWorker.close(),
       ]);
+      stopSystemMonitoringWorker();
     } finally {
       process.exit(0);
     }

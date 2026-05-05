@@ -115,6 +115,8 @@ sessionSchema.index({ userId: 1, lastActivityAt: -1 });
 sessionSchema.index({ userId: 1, createdAt: -1, platform: 1 });
 sessionSchema.index({ userId: 1, createdAt: -1, campaign: 1 });
 sessionSchema.index({ userId: 1, userTrackingId: 1, createdAt: -1 });
+sessionSchema.index({ userTrackingId: 1, createdAt: -1 });
+sessionSchema.index({ userTrackingId: 1, sessionId: 1 });
 
 export type SessionDocument = InferSchemaType<typeof sessionSchema> & {
   _id: Types.ObjectId;

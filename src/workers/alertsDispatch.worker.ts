@@ -11,6 +11,7 @@ import {
 import { UserModel } from "../api/models/user.model.js";
 import { sendAlertEmail } from "../infrastructure/email.js";
 import {
+  ALERTS_DISPATCH_QUEUE_NAME,
   createAlertsDispatchWorker,
   type AlertsDispatchJobPayload,
 } from "../infrastructure/queue.js";
@@ -19,7 +20,9 @@ import {
   resolveDispatchChannelsForAlert,
   type NormalizedNotificationPreferences,
 } from "../services/alertPreferences.service.js";
+import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 import { publishInAppNotification } from "../services/notificationGateway.service.js";
+import { notificationEnabled } from "../services/adminRuntimeConfig.service.js";
 import type { AlertEmailViewModel } from "../templates/alert.email.js";
 
 interface AlertsDispatchJobOutcome {
@@ -228,6 +231,15 @@ export const processAlertsDispatchJob = async (
 ): Promise<AlertsDispatchJobOutcome> => {
   const payload = job.data;
 
+  const isNotificationTypeEnabled = await notificationEnabled(payload.type);
+  if (!isNotificationTypeEnabled) {
+    return {
+      alertId: null,
+      status: "skipped_preferences",
+      emailStatus: "skipped",
+    };
+  }
+
   const userPreferences: NormalizedNotificationPreferences =
     await getNotificationPreferencesForUser(payload.userId);
 
@@ -322,6 +334,7 @@ export const processAlertsDispatchJob = async (
 export const startAlertsDispatchWorker =
   (): Worker<AlertsDispatchJobPayload> => {
     const worker = createAlertsDispatchWorker(processAlertsDispatchJob);
+    attachWorkerMonitoring(worker, ALERTS_DISPATCH_QUEUE_NAME);
 
     worker.on("failed", (failedJob, failureError) => {
       console.error("[alertsDispatch.worker] Job failed", {

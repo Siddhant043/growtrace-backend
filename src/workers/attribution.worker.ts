@@ -2,10 +2,12 @@ import type { Job, Worker } from "bullmq";
 
 import { env } from "../config/env.js";
 import {
+  ATTRIBUTION_QUEUE_NAME,
   createAttributionWorker,
   type AttributionTouchpointJobPayload,
 } from "../infrastructure/queue.js";
 import { processAttributionTouchpointJob } from "../services/attributionJourney.service.js";
+import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 
 let cachedAttributionWorker: Worker<AttributionTouchpointJobPayload> | null =
   null;
@@ -33,6 +35,7 @@ export const startAttributionWorker =
     cachedAttributionWorker = createAttributionWorker(handleAttributionJob, {
       concurrency: env.ATTRIBUTION_WORKER_CONCURRENCY,
     });
+    attachWorkerMonitoring(cachedAttributionWorker, ATTRIBUTION_QUEUE_NAME);
 
     cachedAttributionWorker.on("failed", (job, error) => {
       console.error("[attribution.worker] job failed", {

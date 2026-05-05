@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 
 import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
+import { ReportJobModel } from "../api/models/reportJob.model.js";
 import {
   WEEKLY_REPORTS_USER_JOB_NAME,
   getWeeklyReportsQueue,
@@ -57,6 +58,31 @@ const enqueueWeeklyReportJobsForUserIdBatch = async (
   reason: "cron" | "manual",
 ): Promise<number> => {
   const weeklyReportsQueue = getWeeklyReportsQueue();
+  const weekStartDate = new Date(`${window.weekStartIsoDate}T00:00:00.000Z`);
+  const weekEndDate = new Date(`${window.weekEndIsoDate}T00:00:00.000Z`);
+
+  await Promise.all(
+    batchUserIds.map(async (userId) => {
+      await ReportJobModel.updateOne(
+        {
+          userId: new Types.ObjectId(userId),
+          weekStart: weekStartDate,
+        },
+        {
+          $set: {
+            weekEnd: weekEndDate,
+            status: "pending",
+            error: { message: null },
+          },
+          $setOnInsert: {
+            retryCount: 0,
+          },
+        },
+        { upsert: true },
+      ).exec();
+    }),
+  );
+
   const jobsToAdd = batchUserIds.map((userId) => {
     const jobPayload: WeeklyReportsUserJobPayload = {
       userId,
@@ -76,6 +102,58 @@ const enqueueWeeklyReportJobsForUserIdBatch = async (
 
   const addedJobs = await weeklyReportsQueue.addBulk(jobsToAdd);
   return addedJobs.length;
+};
+
+export const enqueueWeeklyReportForUser = async (parameters: {
+  userId: string;
+  reason: "cron" | "manual";
+  targetWeekEndDateIso?: string;
+}): Promise<{
+  weekStartIsoDate: string;
+  weekEndIsoDate: string;
+  enqueued: boolean;
+}> => {
+  const window = parameters.targetWeekEndDateIso
+    ? computeWeekWindowEndingOnDate(parameters.targetWeekEndDateIso)
+    : computePreviousIsoWeekWindow();
+
+  const weeklyReportsQueue = getWeeklyReportsQueue();
+  const jobId = buildWeeklyReportJobId(parameters.userId, window.weekStartIsoDate);
+
+  await ReportJobModel.updateOne(
+    {
+      userId: new Types.ObjectId(parameters.userId),
+      weekStart: new Date(`${window.weekStartIsoDate}T00:00:00.000Z`),
+    },
+    {
+      $set: {
+        weekEnd: new Date(`${window.weekEndIsoDate}T00:00:00.000Z`),
+        status: "pending",
+        error: { message: null },
+      },
+      $setOnInsert: {
+        retryCount: 0,
+      },
+    },
+    { upsert: true },
+  ).exec();
+
+  await weeklyReportsQueue.add(
+    WEEKLY_REPORTS_USER_JOB_NAME,
+    {
+      userId: parameters.userId,
+      weekStartIso: window.weekStartIsoDate,
+      weekEndIso: window.weekEndIsoDate,
+      reason: parameters.reason,
+    },
+    { jobId },
+  );
+
+  return {
+    weekStartIsoDate: window.weekStartIsoDate,
+    weekEndIsoDate: window.weekEndIsoDate,
+    enqueued: true,
+  };
 };
 
 export const produceWeeklyReports = async (

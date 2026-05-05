@@ -12,6 +12,12 @@ export const ATTRIBUTION_TOUCHPOINT_JOB_NAME = "ingest-touchpoint";
 export const AUDIENCE_AGGREGATION_QUEUE_NAME = "audienceAggregation";
 export const ALERTS_DETECTION_QUEUE_NAME = "alertsDetection";
 export const ALERTS_DISPATCH_QUEUE_NAME = "alertsDispatch";
+export const ADMIN_PLATFORM_METRICS_AGGREGATION_QUEUE_NAME =
+  "adminPlatformMetricsAggregation";
+export const ADMIN_USAGE_METRICS_AGGREGATION_QUEUE_NAME =
+  "adminUsageMetricsAggregation";
+export const ADMIN_FUNNEL_METRICS_AGGREGATION_QUEUE_NAME =
+  "adminFunnelMetricsAggregation";
 
 export const WEEKLY_REPORTS_PRODUCER_JOB_NAME = "produce-weekly-reports";
 export const WEEKLY_REPORTS_USER_JOB_NAME = "generate-user-weekly-report";
@@ -34,12 +40,24 @@ export type MetricsAggregationSchedulerId =
 export type FunnelAggregationSchedulerId =
   (typeof FUNNEL_AGGREGATION_SCHEDULER_IDS)[keyof typeof FUNNEL_AGGREGATION_SCHEDULER_IDS];
 
+export const ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS = {
+  currentUtcDay: "admin-analytics:recompute-current-utc-day",
+  previousUtcDay: "admin-analytics:recompute-previous-utc-day",
+} as const;
+
+export type AdminAnalyticsAggregationSchedulerId =
+  (typeof ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS)[keyof typeof ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS];
+
 export interface MetricsAggregationJobPayload {
   schedulerId: MetricsAggregationSchedulerId;
 }
 
 export interface FunnelAggregationJobPayload {
   schedulerId: FunnelAggregationSchedulerId;
+}
+
+export interface AdminAnalyticsAggregationJobPayload {
+  schedulerId: AdminAnalyticsAggregationSchedulerId;
 }
 
 export interface BehaviorEventJobPayload {
@@ -337,6 +355,168 @@ export const scheduleRecurringFunnelAggregation = async (): Promise<void> => {
       },
     ),
   ]);
+};
+
+let cachedAdminPlatformMetricsAggregationQueue:
+  | Queue<AdminAnalyticsAggregationJobPayload>
+  | null = null;
+
+let cachedAdminUsageMetricsAggregationQueue:
+  | Queue<AdminAnalyticsAggregationJobPayload>
+  | null = null;
+
+let cachedAdminFunnelMetricsAggregationQueue:
+  | Queue<AdminAnalyticsAggregationJobPayload>
+  | null = null;
+
+const buildAdminAnalyticsQueueDefaultOptions = () => ({
+  attempts: 3,
+  backoff: { type: "exponential" as const, delay: 1000 },
+  removeOnComplete: { age: 3600, count: 200 },
+  removeOnFail: { age: 86400 },
+});
+
+export const getAdminPlatformMetricsAggregationQueue =
+  (): Queue<AdminAnalyticsAggregationJobPayload> => {
+    if (cachedAdminPlatformMetricsAggregationQueue) {
+      return cachedAdminPlatformMetricsAggregationQueue;
+    }
+
+    cachedAdminPlatformMetricsAggregationQueue =
+      new Queue<AdminAnalyticsAggregationJobPayload>(
+        ADMIN_PLATFORM_METRICS_AGGREGATION_QUEUE_NAME,
+        {
+          connection: getBullmqRedisConnection(),
+          defaultJobOptions: buildAdminAnalyticsQueueDefaultOptions(),
+        },
+      );
+
+    return cachedAdminPlatformMetricsAggregationQueue;
+  };
+
+export const getAdminUsageMetricsAggregationQueue =
+  (): Queue<AdminAnalyticsAggregationJobPayload> => {
+    if (cachedAdminUsageMetricsAggregationQueue) {
+      return cachedAdminUsageMetricsAggregationQueue;
+    }
+
+    cachedAdminUsageMetricsAggregationQueue =
+      new Queue<AdminAnalyticsAggregationJobPayload>(
+        ADMIN_USAGE_METRICS_AGGREGATION_QUEUE_NAME,
+        {
+          connection: getBullmqRedisConnection(),
+          defaultJobOptions: buildAdminAnalyticsQueueDefaultOptions(),
+        },
+      );
+
+    return cachedAdminUsageMetricsAggregationQueue;
+  };
+
+export const getAdminFunnelMetricsAggregationQueue =
+  (): Queue<AdminAnalyticsAggregationJobPayload> => {
+    if (cachedAdminFunnelMetricsAggregationQueue) {
+      return cachedAdminFunnelMetricsAggregationQueue;
+    }
+
+    cachedAdminFunnelMetricsAggregationQueue =
+      new Queue<AdminAnalyticsAggregationJobPayload>(
+        ADMIN_FUNNEL_METRICS_AGGREGATION_QUEUE_NAME,
+        {
+          connection: getBullmqRedisConnection(),
+          defaultJobOptions: buildAdminAnalyticsQueueDefaultOptions(),
+        },
+      );
+
+    return cachedAdminFunnelMetricsAggregationQueue;
+  };
+
+export const createAdminPlatformMetricsAggregationWorker = (
+  processor: Processor<AdminAnalyticsAggregationJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<AdminAnalyticsAggregationJobPayload> => {
+  return new Worker<AdminAnalyticsAggregationJobPayload>(
+    ADMIN_PLATFORM_METRICS_AGGREGATION_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency: workerOptions.concurrency ?? 1,
+      ...workerOptions,
+    },
+  );
+};
+
+export const createAdminUsageMetricsAggregationWorker = (
+  processor: Processor<AdminAnalyticsAggregationJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<AdminAnalyticsAggregationJobPayload> => {
+  return new Worker<AdminAnalyticsAggregationJobPayload>(
+    ADMIN_USAGE_METRICS_AGGREGATION_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency: workerOptions.concurrency ?? 1,
+      ...workerOptions,
+    },
+  );
+};
+
+export const createAdminFunnelMetricsAggregationWorker = (
+  processor: Processor<AdminAnalyticsAggregationJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<AdminAnalyticsAggregationJobPayload> => {
+  return new Worker<AdminAnalyticsAggregationJobPayload>(
+    ADMIN_FUNNEL_METRICS_AGGREGATION_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency: workerOptions.concurrency ?? 1,
+      ...workerOptions,
+    },
+  );
+};
+
+export const scheduleRecurringAdminAnalyticsAggregation = async (
+  cronPattern: string = env.ADMIN_ANALYTICS_AGGREGATION_CRON,
+): Promise<void> => {
+  const schedulerDefinitions = [
+    {
+      queue: getAdminPlatformMetricsAggregationQueue(),
+      jobName: ADMIN_PLATFORM_METRICS_AGGREGATION_QUEUE_NAME,
+    },
+    {
+      queue: getAdminUsageMetricsAggregationQueue(),
+      jobName: ADMIN_USAGE_METRICS_AGGREGATION_QUEUE_NAME,
+    },
+    {
+      queue: getAdminFunnelMetricsAggregationQueue(),
+      jobName: ADMIN_FUNNEL_METRICS_AGGREGATION_QUEUE_NAME,
+    },
+  ] as const;
+
+  await Promise.all(
+    schedulerDefinitions.flatMap(({ queue, jobName }) => [
+      queue.upsertJobScheduler(
+        `${jobName}:${ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS.currentUtcDay}`,
+        { pattern: cronPattern },
+        {
+          name: ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
+          data: {
+            schedulerId: ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
+          },
+        },
+      ),
+      queue.upsertJobScheduler(
+        `${jobName}:${ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS.previousUtcDay}`,
+        { pattern: cronPattern },
+        {
+          name: ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
+          data: {
+            schedulerId: ADMIN_ANALYTICS_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
+          },
+        },
+      ),
+    ]),
+  );
 };
 
 export type AttributionTouchpointType =

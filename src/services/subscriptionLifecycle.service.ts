@@ -2,6 +2,7 @@ import {
   SubscriptionModel,
   type SubscriptionDocument,
 } from "../api/models/subscription.model.js";
+import { PaymentModel } from "../api/models/payment.model.js";
 import {
   UserModel,
   type SubscriptionStatus,
@@ -20,6 +21,7 @@ export const HANDLED_RAZORPAY_EVENTS = [
   "subscription.cancelled",
   "subscription.completed",
   "subscription.expired",
+  "payment.captured",
   "payment.failed",
 ] as const;
 
@@ -50,6 +52,10 @@ type RazorpaySubscriptionEventEntity = {
 type RazorpayPaymentEventEntity = {
   id?: string;
   subscription_id?: string;
+  order_id?: string;
+  amount?: number;
+  currency?: string;
+  method?: string;
   status?: string;
   error_code?: string | null;
   error_description?: string | null;
@@ -165,6 +171,74 @@ const findSubscriptionForEvent = async (
   return SubscriptionModel.findOne({
     razorpaySubscriptionId: subscriptionRazorpayId,
   });
+};
+
+const resolvePaymentStatus = (
+  eventName: HandledRazorpayEvent,
+): "success" | "failed" | null => {
+  if (eventName === "payment.captured") {
+    return "success";
+  }
+  if (eventName === "payment.failed") {
+    return "failed";
+  }
+  return null;
+};
+
+const resolvePaymentMethod = (
+  method: string | undefined,
+): "card" | "upi" | "netbanking" | "wallet" | "emi" | null => {
+  if (!method) {
+    return null;
+  }
+
+  const normalizedMethod = method.trim().toLowerCase();
+  if (
+    normalizedMethod === "card" ||
+    normalizedMethod === "upi" ||
+    normalizedMethod === "netbanking" ||
+    normalizedMethod === "wallet" ||
+    normalizedMethod === "emi"
+  ) {
+    return normalizedMethod;
+  }
+  return null;
+};
+
+const upsertPaymentFromEvent = async (
+  eventInput: RazorpayLifecycleEventInput,
+  subscriptionDocument: SubscriptionDocument,
+): Promise<void> => {
+  const paymentStatus = resolvePaymentStatus(eventInput.event);
+  const paymentEntity = eventInput.payment;
+  if (!paymentStatus || !paymentEntity?.id) {
+    return;
+  }
+
+  const errorCode = paymentEntity.error_code?.trim();
+  const errorDescription = paymentEntity.error_description?.trim();
+  const failureReason =
+    paymentStatus === "failed"
+      ? [errorCode, errorDescription].filter(Boolean).join(": ") || "Payment failed"
+      : null;
+
+  await PaymentModel.updateOne(
+    { razorpayPaymentId: paymentEntity.id },
+    {
+      $setOnInsert: {
+        userId: subscriptionDocument.userId,
+        subscriptionId: subscriptionDocument._id,
+        razorpayPaymentId: paymentEntity.id,
+        razorpayOrderId: paymentEntity.order_id ?? null,
+        amount: Math.max(0, Math.round((paymentEntity.amount ?? 0) / 100)),
+        currency: (paymentEntity.currency ?? "INR").toUpperCase(),
+        status: paymentStatus,
+        method: resolvePaymentMethod(paymentEntity.method),
+        failureReason,
+      },
+    },
+    { upsert: true },
+  );
 };
 
 const applySubscriptionUpdateAtomically = async (
@@ -299,6 +373,9 @@ export const processRazorpayLifecycleEvent = async (
     case "subscription.expired":
       subscriptionUpdate.status = "expired";
       break;
+    case "payment.captured":
+      subscriptionUpdate.status = subscriptionUpdate.status ?? "active";
+      break;
     case "subscription.updated":
       break;
     case "payment.failed":
@@ -318,6 +395,7 @@ export const processRazorpayLifecycleEvent = async (
     return { kind: "skipped", reason: "concurrent_update" };
   }
 
+  await upsertPaymentFromEvent(eventInput, updatedSubscription);
   await syncUserFromSubscription(updatedSubscription);
 
   return {

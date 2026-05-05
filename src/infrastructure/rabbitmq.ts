@@ -1,6 +1,7 @@
 import amqp, { type Channel, type ChannelModel } from "amqplib";
 
 import { env } from "../config/env.js";
+import { captureSystemError } from "../services/systemMonitoring.errorLog.service.js";
 
 const ANALYTICS_EXCHANGE_NAME = "analytics_exchange" as const;
 const ANALYTICS_EXCHANGE_TYPE = "topic" as const;
@@ -24,6 +25,17 @@ export const connectToRabbitMQ = async (): Promise<ChannelModel> => {
   cachedRabbitMqConnection = await amqp.connect(buildRabbitMqConnectionUrl());
 
   cachedRabbitMqConnection.on("error", (connectionError: unknown) => {
+    void captureSystemError({
+      source: "queue",
+      service: "infrastructure.rabbitmq.connection",
+      severity: "high",
+      message:
+        connectionError instanceof Error
+          ? connectionError.message
+          : String(connectionError),
+      stack: connectionError instanceof Error ? (connectionError.stack ?? null) : null,
+      metadata: { event: "connection_error" },
+    });
     console.error("[infrastructure.rabbitmq] connection error", {
       error:
         connectionError instanceof Error
@@ -33,6 +45,13 @@ export const connectToRabbitMQ = async (): Promise<ChannelModel> => {
   });
 
   cachedRabbitMqConnection.on("close", () => {
+    void captureSystemError({
+      source: "queue",
+      service: "infrastructure.rabbitmq.connection",
+      severity: "medium",
+      message: "RabbitMQ connection closed",
+      metadata: { event: "connection_closed" },
+    });
     console.warn("[infrastructure.rabbitmq] connection closed");
     cachedRabbitMqConnection = null;
     cachedRabbitMqChannel = null;
@@ -53,6 +72,14 @@ const getRabbitMqPublisherChannel = async (): Promise<Channel> => {
   cachedRabbitMqChannel = await connection.createChannel();
 
   cachedRabbitMqChannel.on("error", (channelError: unknown) => {
+    void captureSystemError({
+      source: "queue",
+      service: "infrastructure.rabbitmq.channel",
+      severity: "high",
+      message: channelError instanceof Error ? channelError.message : String(channelError),
+      stack: channelError instanceof Error ? (channelError.stack ?? null) : null,
+      metadata: { event: "channel_error" },
+    });
     console.error("[infrastructure.rabbitmq] channel error", {
       error:
         channelError instanceof Error
@@ -62,6 +89,13 @@ const getRabbitMqPublisherChannel = async (): Promise<Channel> => {
   });
 
   cachedRabbitMqChannel.on("close", () => {
+    void captureSystemError({
+      source: "queue",
+      service: "infrastructure.rabbitmq.channel",
+      severity: "medium",
+      message: "RabbitMQ channel closed",
+      metadata: { event: "channel_closed" },
+    });
     console.warn("[infrastructure.rabbitmq] channel closed");
     cachedRabbitMqChannel = null;
     analyticsExchangeAssertedFlag = false;
@@ -85,6 +119,7 @@ const ensureAnalyticsExchangeAsserted = async (
 export const publishToAnalyticsExchange = async (
   routingKey: string,
   payload: Record<string, unknown>,
+  options: { messageId?: string } = {},
 ): Promise<boolean> => {
   const channel = await getRabbitMqPublisherChannel();
   await ensureAnalyticsExchangeAsserted(channel);
@@ -98,6 +133,7 @@ export const publishToAnalyticsExchange = async (
       persistent: true,
       contentType: "application/json",
       timestamp: Date.now(),
+      messageId: options.messageId,
     },
   );
 };

@@ -2,6 +2,7 @@ import type { Job, Worker } from "bullmq";
 
 import {
   createFunnelAggregationWorker,
+  FUNNEL_AGGREGATION_QUEUE_NAME,
   FUNNEL_AGGREGATION_SCHEDULER_IDS,
   type FunnelAggregationJobPayload,
 } from "../infrastructure/queue.js";
@@ -10,6 +11,7 @@ import {
   getCurrentUtcDateString,
   getPreviousUtcDateString,
 } from "../utils/dateBounds.utils.js";
+import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 
 const resolveTargetDateForJob = (
   jobPayload: FunnelAggregationJobPayload,
@@ -45,6 +47,7 @@ export const processFunnelAggregationJob = async (
 export const startFunnelAggregationWorker =
   (): Worker<FunnelAggregationJobPayload> => {
     const worker = createFunnelAggregationWorker(processFunnelAggregationJob);
+    attachWorkerMonitoring(worker, FUNNEL_AGGREGATION_QUEUE_NAME);
 
     worker.on("failed", (failedJob, failureError) => {
       console.error("[funnelAggregation.worker] Job failed", {

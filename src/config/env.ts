@@ -103,6 +103,7 @@ const runtimeEnvironmentSchema = z.object({
   AUDIENCE_AGGREGATION_CRON: z.string().min(1).default("*/5 * * * *"),
   ALERTS_DETECTION_CRON_HOURLY: z.string().min(1).default("0 * * * *"),
   ALERTS_DETECTION_CRON_DAILY: z.string().min(1).default("0 6 * * *"),
+  ADMIN_ANALYTICS_AGGREGATION_CRON: z.string().min(1).default("0 * * * *"),
   ALERTS_ENGAGEMENT_DROP_THRESHOLD: z.coerce
     .number()
     .min(0)

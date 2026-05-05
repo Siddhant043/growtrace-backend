@@ -135,20 +135,21 @@ app.use(
     },
   }),
 );
+app.use("/track", trackRouter);
+
 const shouldEnableRateLimiting = !["development", "test"].includes(env.ENV);
 
 if (shouldEnableRateLimiting) {
   app.use(
     rateLimit({
       windowMs: 1 * 60 * 1000, // 1 minute
-      limit: 100, // Limit each IP to 10000 requests per `windowMs`
+      limit: 100, // Limit each IP to 100 requests per `windowMs`
       message: "Too many requests, please try again later.",
       standardHeaders: true,
       legacyHeaders: false,
     }),
   );
 }
-app.use("/track", trackRouter);
 
 const bullBoardServerAdapter = createBullBoardServerAdapter();
 app.use(

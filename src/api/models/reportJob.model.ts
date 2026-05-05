@@ -54,9 +54,6 @@ const reportJobSchema = new Schema(
   },
 );
 
-reportJobSchema.index({ userId: 1 });
-reportJobSchema.index({ weekStart: -1 });
-reportJobSchema.index({ status: 1 });
 reportJobSchema.index({ userId: 1, weekStart: 1 }, { unique: true });
 
 export type ReportJobDocument = InferSchemaType<typeof reportJobSchema> & {

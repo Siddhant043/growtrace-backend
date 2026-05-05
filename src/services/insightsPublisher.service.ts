@@ -2,10 +2,12 @@ import {
   ANALYTICS_INSIGHTS_ROUTING_KEY,
   publishToAnalyticsExchange,
 } from "../infrastructure/rabbitmq.js";
+import { InsightJobModel } from "../api/models/insightJob.model.js";
 import {
   buildUserAnalyticsSnapshot,
   findActiveUserIdsForDate,
 } from "./insightsSnapshot.service.js";
+import { randomUUID } from "node:crypto";
 
 const SNAPSHOT_WINDOW_DAYS_DEFAULT = 7;
 
@@ -40,9 +42,45 @@ export const publishUserAnalyticsSnapshot = async (
     return;
   }
 
-  await publishToAnalyticsExchange(ANALYTICS_INSIGHTS_ROUTING_KEY, {
-    ...snapshotPayload,
+  const insightJobId = randomUUID();
+  const publishStartedAtMs = Date.now();
+
+  await InsightJobModel.create({
+    userId,
+    jobId: insightJobId,
+    status: "pending",
+    payload: snapshotPayload,
+    retryCount: 0,
   });
+
+  try {
+    await publishToAnalyticsExchange(
+      ANALYTICS_INSIGHTS_ROUTING_KEY,
+      {
+        ...snapshotPayload,
+        jobId: insightJobId,
+      },
+      { messageId: insightJobId },
+    );
+  } catch (publishError) {
+    await InsightJobModel.updateOne(
+      { jobId: insightJobId },
+      {
+        $set: {
+          status: "failed",
+          processingDurationMs: Date.now() - publishStartedAtMs,
+          error: {
+            message:
+              publishError instanceof Error
+                ? publishError.message
+                : String(publishError),
+            stack: publishError instanceof Error ? publishError.stack ?? null : null,
+          },
+        },
+      },
+    );
+    throw publishError;
+  }
 };
 
 type PublishSnapshotsForActiveUsersResult = {

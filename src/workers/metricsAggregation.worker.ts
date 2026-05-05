@@ -5,6 +5,7 @@ import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
 import {
   createMetricsAggregationWorker,
   enqueuePerUserAlertsDetectionJob,
+  METRICS_AGGREGATION_QUEUE_NAME,
   METRICS_AGGREGATION_SCHEDULER_IDS,
   type MetricsAggregationJobPayload,
 } from "../infrastructure/queue.js";
@@ -14,6 +15,7 @@ import {
   getCurrentUtcDateString,
   getPreviousUtcDateString,
 } from "../services/metricsAggregation.service.js";
+import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 
 const resolveTargetDateForJob = (
   jobPayload: MetricsAggregationJobPayload,
@@ -128,6 +130,7 @@ const enqueueAlertDetectionForActiveUsersOnDate = async (
 export const startMetricsAggregationWorker =
   (): Worker<MetricsAggregationJobPayload> => {
     const worker = createMetricsAggregationWorker(processMetricsAggregationJob);
+    attachWorkerMonitoring(worker, METRICS_AGGREGATION_QUEUE_NAME);
 
     worker.on("failed", (failedJob, failureError) => {
       console.error("[metricsAggregation.worker] Job failed", {

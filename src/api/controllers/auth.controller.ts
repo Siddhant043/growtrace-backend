@@ -279,6 +279,7 @@ export const login = async (
       if (!existingUser.fullName?.trim().length) {
         existingUser.fullName = verifiedGoogleIdentity.fullName;
       }
+      existingUser.lastLoginAt = new Date();
 
       await existingUser.save();
       authenticatedUser = existingUser as unknown as AuthUserRecord;
@@ -293,6 +294,7 @@ export const login = async (
         googleSub: verifiedGoogleIdentity.googleSub,
         emailVerified: verifiedGoogleIdentity.emailVerified,
         imageUrl: verifiedGoogleIdentity.imageUrl,
+        lastLoginAt: new Date(),
       })) as unknown as AuthUserRecord;
     }
   } else {
@@ -323,6 +325,8 @@ export const login = async (
       throw createApiError("Invalid email or password", 401);
     }
 
+    user.lastLoginAt = new Date();
+    await user.save();
     authenticatedUser = user as unknown as AuthUserRecord;
   }
 

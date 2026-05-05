@@ -1,6 +1,12 @@
 import { model, Schema, type InferSchemaType, type Types } from "mongoose";
 
-export const BEHAVIOR_EVENT_TYPES = ["page_view", "scroll", "exit"] as const;
+export const BEHAVIOR_EVENT_TYPES = [
+  "page_view",
+  "click",
+  "scroll",
+  "time_spent",
+  "exit",
+] as const;
 export type BehaviorEventType = (typeof BEHAVIOR_EVENT_TYPES)[number];
 
 const behaviorEventSchema = new Schema(
@@ -17,10 +23,22 @@ const behaviorEventSchema = new Schema(
       required: true,
       index: true,
     },
+    userTrackingId: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
     linkId: {
       type: Schema.Types.ObjectId,
       ref: "Link",
       default: null,
+      index: true,
+    },
+    platform: {
+      type: String,
+      trim: true,
+      default: "unknown",
       index: true,
     },
     eventType: {
@@ -45,6 +63,10 @@ const behaviorEventSchema = new Schema(
       scrollDepth: { type: Number, default: null, min: 0, max: 100 },
       duration: { type: Number, default: null, min: 0 },
     },
+    metadata: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
     country: {
       type: String,
       trim: true,
@@ -58,6 +80,8 @@ const behaviorEventSchema = new Schema(
 
 behaviorEventSchema.index({ userId: 1, timestamp: -1 });
 behaviorEventSchema.index({ sessionId: 1, timestamp: -1 });
+behaviorEventSchema.index({ userTrackingId: 1, timestamp: -1 });
+behaviorEventSchema.index({ eventType: 1, timestamp: -1 });
 
 export type BehaviorEventDocument = InferSchemaType<typeof behaviorEventSchema> & {
   _id: Types.ObjectId;

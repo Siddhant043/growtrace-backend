@@ -1,6 +1,16 @@
 import { Router } from "express";
 
 import analyticsRouter from "./analytics.js";
+import adminAnalyticsRouter from "./admin.analytics.js";
+import adminAlertsRouter from "./admin.alerts.js";
+import adminAudienceRouter from "./admin.audience.js";
+import adminBillingRouter from "./admin.billing.js";
+import adminInsightsRouter from "./admin.insights.js";
+import adminReportsRouter from "./admin.reports.js";
+import adminSettingsRouter from "./admin.settings.js";
+import adminSupportRouter from "./admin.support.js";
+import adminSystemRouter from "./admin.system.js";
+import adminUsersRouter from "./admin.users.js";
 import attributionRouter from "./attribution.js";
 import audienceRouter from "./audience.js";
 import authRouter from "./auth.js";
@@ -19,6 +29,16 @@ import webhooksRouter from "./webhooks.js";
 const apiRouter = Router();
 
 apiRouter.use("/auth", authRouter);
+apiRouter.use("/admin/users", adminUsersRouter);
+apiRouter.use("/admin", adminBillingRouter);
+apiRouter.use("/admin/analytics", adminAnalyticsRouter);
+apiRouter.use("/admin/insights", adminInsightsRouter);
+apiRouter.use("/admin/alerts", adminAlertsRouter);
+apiRouter.use("/admin/reports", adminReportsRouter);
+apiRouter.use("/admin/audience", adminAudienceRouter);
+apiRouter.use("/admin/system", adminSystemRouter);
+apiRouter.use("/admin/support", adminSupportRouter);
+apiRouter.use("/admin/settings", adminSettingsRouter);
 apiRouter.use("/users", userRouter);
 apiRouter.use("/links", linkRouter);
 apiRouter.use("/analytics", analyticsRouter);

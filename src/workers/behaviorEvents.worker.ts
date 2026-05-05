@@ -3,6 +3,7 @@ import type { Job, Worker } from "bullmq";
 
 import {
   createBehaviorEventsWorker,
+  BEHAVIOR_EVENTS_QUEUE_NAME,
   type BehaviorEventJobPayload,
 } from "../infrastructure/queue.js";
 import {
@@ -13,6 +14,7 @@ import { SessionModel } from "../api/models/session.model.js";
 import { parseUserAgent } from "../api/utils/parseUserAgent.js";
 import { getLinkMetadataSummary } from "../api/utils/linkMetadataCache.js";
 import { BOUNCE_DURATION_THRESHOLD_SECONDS } from "../api/constants/engagement.js";
+import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 
 const toObjectIdOrNull = (
   candidateId: string | null,
@@ -31,8 +33,10 @@ const persistBehaviorEvent = async (
   await BehaviorEventModel.create({
     sessionId: jobPayload.sessionId,
     userId: new Types.ObjectId(jobPayload.userId),
+    userTrackingId: jobPayload.userTrackingId ?? "unknown",
     linkId: toObjectIdOrNull(jobPayload.linkId),
     eventType: jobPayload.eventType as BehaviorEventType,
+    platform: "unknown",
     timestamp: eventTimestamp,
     page: {
       url: jobPayload.page.url,
@@ -45,6 +49,11 @@ const persistBehaviorEvent = async (
     metrics: {
       scrollDepth: jobPayload.metrics.scrollDepth ?? null,
       duration: jobPayload.metrics.duration ?? null,
+    },
+    metadata: {
+      eventType: jobPayload.eventType,
+      isReturning: jobPayload.isReturning,
+      receivedAt: jobPayload.receivedAt,
     },
     country: jobPayload.country,
   });
@@ -178,6 +187,7 @@ export const processBehaviorEventJob = async (
 
 export const startBehaviorEventsWorker = (): Worker<BehaviorEventJobPayload> => {
   const worker = createBehaviorEventsWorker(processBehaviorEventJob);
+  attachWorkerMonitoring(worker, BEHAVIOR_EVENTS_QUEUE_NAME);
 
   worker.on("failed", (failedJob, failureError) => {
     console.error("[behaviorEvents.worker] Job failed", {

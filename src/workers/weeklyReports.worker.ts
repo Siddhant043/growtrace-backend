@@ -1,9 +1,12 @@
 import type { Job, Worker } from "bullmq";
+import { Types } from "mongoose";
 
 import { env } from "../config/env.js";
+import { ReportJobModel } from "../api/models/reportJob.model.js";
 import { sendWeeklyReportEmail } from "../infrastructure/email.js";
 import {
   WEEKLY_REPORTS_PRODUCER_JOB_NAME,
+  WEEKLY_REPORTS_QUEUE_NAME,
   WEEKLY_REPORTS_USER_JOB_NAME,
   createWeeklyReportsWorker,
   type WeeklyReportsJobPayload,
@@ -20,6 +23,7 @@ import {
 } from "../services/weeklyReportGenerator.service.js";
 import { computeWeekWindowEndingOnDate } from "../utils/weeklyReports.dateWindow.js";
 import { produceWeeklyReports } from "../services/weeklyReports.producer.js";
+import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 
 const isProducerJobPayload = (
   jobPayload: WeeklyReportsJobPayload,
@@ -65,6 +69,33 @@ const updateDeliveryStatusForReport = async (
   ).exec();
 };
 
+const updateReportJobForUserPayload = async (
+  payload: WeeklyReportsUserJobPayload,
+  update: {
+    status: "processing" | "generated" | "failed";
+    errorMessage?: string | null;
+    incrementRetryCount?: boolean;
+  },
+): Promise<void> => {
+  await ReportJobModel.updateOne(
+    {
+      userId: new Types.ObjectId(payload.userId),
+      weekStart: new Date(`${payload.weekStartIso}T00:00:00.000Z`),
+    },
+    {
+      $set: {
+        weekEnd: new Date(`${payload.weekEndIso}T00:00:00.000Z`),
+        status: update.status,
+        error: {
+          message: update.errorMessage ?? null,
+        },
+      },
+      ...(update.incrementRetryCount ? { $inc: { retryCount: 1 } } : {}),
+    },
+    { upsert: true },
+  ).exec();
+};
+
 const processProducerJob = async (
   job: Job<WeeklyReportsProducerJobPayload>,
 ): Promise<void> => {
@@ -83,22 +114,31 @@ const processProducerJob = async (
 const processUserJob = async (
   job: Job<WeeklyReportsUserJobPayload>,
 ): Promise<void> => {
+  await updateReportJobForUserPayload(job.data, {
+    status: "processing",
+    errorMessage: null,
+  });
+
   const window = computeWeekWindowEndingOnDate(job.data.weekEndIso);
-  const generationResult: GenerateAndPersistResult =
-    await generateAndPersistWeeklyReport({
-      userId: job.data.userId,
-      window,
-    });
-
-  if (!generationResult.shouldEmail) {
-    console.info(
-      `[weeklyReports.worker] user job skipped userId=${job.data.userId} ` +
-        `weekStart=${job.data.weekStartIso} reason=${generationResult.skipReason ?? "unknown"}`,
-    );
-    return;
-  }
-
   try {
+    const generationResult: GenerateAndPersistResult =
+      await generateAndPersistWeeklyReport({
+        userId: job.data.userId,
+        window,
+      });
+
+    if (!generationResult.shouldEmail) {
+      await updateReportJobForUserPayload(job.data, {
+        status: "generated",
+        errorMessage: null,
+      });
+      console.info(
+        `[weeklyReports.worker] user job skipped userId=${job.data.userId} ` +
+          `weekStart=${job.data.weekStartIso} reason=${generationResult.skipReason ?? "unknown"}`,
+      );
+      return;
+    }
+
     const baseUrl = env.CLIENT_APP_URL;
     const sendResult = await sendWeeklyReportEmail({
       recipientEmail: generationResult.payload.recipientEmail,
@@ -112,6 +152,10 @@ const processUserJob = async (
     await updateDeliveryStatusForReport(job.data, "emailed", {
       emailMessageId: sendResult.messageId,
     });
+    await updateReportJobForUserPayload(job.data, {
+      status: "generated",
+      errorMessage: null,
+    });
 
     console.info(
       `[weeklyReports.worker] user job emailed userId=${job.data.userId} ` +
@@ -123,6 +167,11 @@ const processUserJob = async (
 
     await updateDeliveryStatusForReport(job.data, "failed", {
       failureReason: failureMessage.slice(0, 500),
+    });
+    await updateReportJobForUserPayload(job.data, {
+      status: "failed",
+      errorMessage: failureMessage.slice(0, 500),
+      incrementRetryCount: true,
     });
 
     throw emailError;
@@ -161,6 +210,7 @@ export const startWeeklyReportsWorker = (): Worker<WeeklyReportsJobPayload> => {
   const worker = createWeeklyReportsWorker(processWeeklyReportsJob, {
     concurrency: env.WEEKLY_REPORTS_WORKER_CONCURRENCY,
   });
+  attachWorkerMonitoring(worker, WEEKLY_REPORTS_QUEUE_NAME);
 
   worker.on("failed", (failedJob, failureError) => {
     console.error("[weeklyReports.worker] Job failed", {

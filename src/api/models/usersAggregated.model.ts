@@ -78,6 +78,7 @@ const usersAggregatedSchema = new Schema(
   {
     timestamps: true,
     versionKey: false,
+    collection: "users_aggregated",
   },
 );
 
@@ -87,6 +88,10 @@ usersAggregatedSchema.index(
 );
 usersAggregatedSchema.index({ userId: 1, engagementScore: -1 });
 usersAggregatedSchema.index({ userId: 1, firstVisitAt: -1 });
+usersAggregatedSchema.index({ engagementScore: -1 });
+usersAggregatedSchema.index({ isReturning: 1 });
+usersAggregatedSchema.index({ firstVisitAt: -1 });
+usersAggregatedSchema.index({ primaryPlatform: 1, firstVisitAt: -1 });
 usersAggregatedSchema.index({
   userId: 1,
   primaryPlatform: 1,

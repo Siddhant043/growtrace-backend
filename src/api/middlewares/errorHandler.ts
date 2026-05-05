@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express'
+import { captureSystemError } from '../../services/systemMonitoring.errorLog.service.js'
 
 type ErrorWithStatusCode = Error & {
   statusCode?: number
@@ -8,12 +9,27 @@ type ErrorWithStatusCode = Error & {
 
 export const errorHandler = (
   error: ErrorWithStatusCode,
-  _request: Request,
+  request: Request,
   response: Response,
   _next: NextFunction,
 ): void => {
   const statusCode = error.statusCode ?? 500
   const isServerError = statusCode >= 500
+
+  void captureSystemError({
+    source: 'api',
+    service: 'express-api',
+    severity: statusCode >= 500 ? 'high' : 'medium',
+    message: error.message || 'Unknown API error',
+    stack: error.stack ?? null,
+    metadata: {
+      method: request.method,
+      path: request.originalUrl,
+      statusCode,
+      code: error.code,
+      details: error.details,
+    },
+  })
 
   const responseBody: {
     success: false

@@ -18,6 +18,13 @@ const insightReadSchema = new Schema(
     confidence: { type: Number, required: true, min: 0, max: 1 },
     signature: { type: String, required: true, trim: true },
     metadata: { type: Schema.Types.Mixed, default: null },
+    sourceDataSnapshot: { type: Schema.Types.Mixed, default: null },
+    status: {
+      type: String,
+      enum: ["success"],
+      default: "success",
+      required: true,
+    },
     createdAt: { type: Date, required: true, default: () => new Date() },
   },
   {

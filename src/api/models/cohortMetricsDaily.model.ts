@@ -63,6 +63,7 @@ const cohortMetricsDailySchema = new Schema(
   {
     timestamps: true,
     versionKey: false,
+    collection: "cohort_metrics_daily",
   },
 );
 
@@ -72,6 +73,9 @@ cohortMetricsDailySchema.index(
 );
 cohortMetricsDailySchema.index({ userId: 1, cohortDate: -1 });
 cohortMetricsDailySchema.index({ userId: 1, primaryPlatform: 1 });
+cohortMetricsDailySchema.index({ cohortDate: 1 });
+cohortMetricsDailySchema.index({ primaryPlatform: 1 });
+cohortMetricsDailySchema.index({ cohortDate: 1, primaryPlatform: 1 });
 
 export type CohortMetricsDailyDocument = InferSchemaType<
   typeof cohortMetricsDailySchema

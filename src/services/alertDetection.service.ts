@@ -4,12 +4,21 @@ import { env } from "../config/env.js";
 import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
 import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model.js";
 import { LinkModel } from "../api/models/link.model.js";
+import { AlertModel, type AlertType } from "../api/models/alert.model.js";
+import { AlertRuleModel } from "../api/models/alertRule.model.js";
 import {
   formatDateAsUtcIsoDate,
   getCurrentUtcDateString,
   getPreviousUtcDateString,
 } from "../utils/dateBounds.utils.js";
-import type { AlertType } from "../api/models/alert.model.js";
+type AlertRuleConfig = {
+  enabled: boolean;
+  cooldownHours: number;
+  thresholds: {
+    dropPercent: number | null;
+    spikeMultiplier: number | null;
+  };
+};
 
 const TRAFFIC_SPIKE_BASELINE_DAYS = 7;
 
@@ -81,6 +90,7 @@ const computeWeightedDailyEngagementForUser = async (
 
 export const evaluateEngagementDropForUser = async (
   userId: string,
+  dropThresholdRatio: number = env.ALERTS_ENGAGEMENT_DROP_THRESHOLD,
 ): Promise<DetectedAlertCandidate | null> => {
   const todayIso = getCurrentUtcDateString();
   const yesterdayIso = getPreviousUtcDateString();
@@ -106,7 +116,7 @@ export const evaluateEngagementDropForUser = async (
     todayEngagement.avgEngagementScore /
     Math.max(yesterdayEngagement.avgEngagementScore, 0.0001);
 
-  if (dropRatio >= env.ALERTS_ENGAGEMENT_DROP_THRESHOLD) {
+  if (dropRatio >= dropThresholdRatio) {
     return null;
   }
 
@@ -126,6 +136,7 @@ export const evaluateEngagementDropForUser = async (
       todaySessions: todayEngagement.totalSessions,
       yesterdaySessions: yesterdayEngagement.totalSessions,
       thresholdRatio: env.ALERTS_ENGAGEMENT_DROP_THRESHOLD,
+      configuredThresholdRatio: dropThresholdRatio,
       dateIso: todayIso,
     },
     deepLinkPath: "/analytics/advanced",
@@ -235,6 +246,7 @@ const computeBaselineWindow = (): {
 
 export const evaluateTrafficSpikesForUser = async (
   userId: string,
+  spikeMultiplier: number = env.ALERTS_TRAFFIC_SPIKE_MULTIPLIER,
 ): Promise<DetectedAlertCandidate[]> => {
   const todayIso = getCurrentUtcDateString();
   const { baselineWindowStartIso, baselineWindowEndIso } = computeBaselineWindow();
@@ -260,8 +272,7 @@ export const evaluateTrafficSpikesForUser = async (
       continue;
     }
 
-    const spikeThreshold =
-      baselineRow.avgSessions * env.ALERTS_TRAFFIC_SPIKE_MULTIPLIER;
+    const spikeThreshold = baselineRow.avgSessions * spikeMultiplier;
 
     if (todayRow.totalSessions <= spikeThreshold) {
       continue;
@@ -282,6 +293,7 @@ export const evaluateTrafficSpikesForUser = async (
         baselineAvgSessions: Number(baselineRow.avgSessions.toFixed(2)),
         liftPercent,
         thresholdMultiplier: env.ALERTS_TRAFFIC_SPIKE_MULTIPLIER,
+        configuredThresholdMultiplier: spikeMultiplier,
         dateIso: todayIso,
       },
       deepLinkPath: "/analytics/advanced",
@@ -403,14 +415,33 @@ export const evaluateNewTopLinkForUser = async (
 export const evaluateAllAlertCandidatesForUser = async (
   userId: string,
 ): Promise<DetectedAlertCandidate[]> => {
+  const rules = await resolveAlertRuleConfigMap();
+  const engagementDropRule = rules.engagement_drop;
+  const trafficSpikeRule = rules.traffic_spike;
+  const topLinkRule = rules.top_link;
+
+  const engagementDropThresholdRatio =
+    engagementDropRule.thresholds.dropPercent !== null
+      ? 1 - engagementDropRule.thresholds.dropPercent / 100
+      : env.ALERTS_ENGAGEMENT_DROP_THRESHOLD;
+  const trafficSpikeMultiplier =
+    trafficSpikeRule.thresholds.spikeMultiplier ??
+    env.ALERTS_TRAFFIC_SPIKE_MULTIPLIER;
+
   const [
     engagementDropCandidate,
     trafficSpikeCandidates,
     topLinkCandidate,
   ] = await Promise.all([
-    evaluateEngagementDropForUser(userId),
-    evaluateTrafficSpikesForUser(userId),
-    evaluateNewTopLinkForUser(userId),
+    engagementDropRule.enabled
+      ? evaluateEngagementDropForUser(userId, engagementDropThresholdRatio)
+      : Promise.resolve(null),
+    trafficSpikeRule.enabled
+      ? evaluateTrafficSpikesForUser(userId, trafficSpikeMultiplier)
+      : Promise.resolve([]),
+    topLinkRule.enabled
+      ? evaluateNewTopLinkForUser(userId)
+      : Promise.resolve(null),
   ]);
 
   const allCandidates: DetectedAlertCandidate[] = [];
@@ -422,5 +453,83 @@ export const evaluateAllAlertCandidatesForUser = async (
     allCandidates.push(topLinkCandidate);
   }
 
-  return allCandidates;
+  const dedupedCandidates: DetectedAlertCandidate[] = [];
+  for (const candidate of allCandidates) {
+    const rule = rules[candidate.type];
+    const shouldSkipForCooldown = await hasRecentAlertWithinCooldownWindow({
+      userId,
+      type: candidate.type,
+      cooldownHours: rule.cooldownHours,
+    });
+    if (!shouldSkipForCooldown) {
+      dedupedCandidates.push(candidate);
+    }
+  }
+
+  return dedupedCandidates;
+};
+
+const resolveAlertRuleConfigMap = async (): Promise<Record<AlertType, AlertRuleConfig>> => {
+  const persistedRules = await AlertRuleModel.find({})
+    .select("type enabled thresholds cooldownHours")
+    .lean();
+
+  const defaults: Record<AlertType, AlertRuleConfig> = {
+    engagement_drop: {
+      enabled: true,
+      cooldownHours: env.ALERTS_DEDUP_WINDOW_HOURS,
+      thresholds: {
+        dropPercent: Number(
+          ((1 - env.ALERTS_ENGAGEMENT_DROP_THRESHOLD) * 100).toFixed(2),
+        ),
+        spikeMultiplier: null,
+      },
+    },
+    traffic_spike: {
+      enabled: true,
+      cooldownHours: env.ALERTS_DEDUP_WINDOW_HOURS,
+      thresholds: {
+        dropPercent: null,
+        spikeMultiplier: env.ALERTS_TRAFFIC_SPIKE_MULTIPLIER,
+      },
+    },
+    top_link: {
+      enabled: true,
+      cooldownHours: env.ALERTS_DEDUP_WINDOW_HOURS,
+      thresholds: {
+        dropPercent: null,
+        spikeMultiplier: null,
+      },
+    },
+  };
+
+  for (const persistedRule of persistedRules) {
+    defaults[persistedRule.type as AlertType] = {
+      enabled: persistedRule.enabled ?? true,
+      cooldownHours: persistedRule.cooldownHours ?? env.ALERTS_DEDUP_WINDOW_HOURS,
+      thresholds: {
+        dropPercent: persistedRule.thresholds?.dropPercent ?? null,
+        spikeMultiplier: persistedRule.thresholds?.spikeMultiplier ?? null,
+      },
+    };
+  }
+
+  return defaults;
+};
+
+const hasRecentAlertWithinCooldownWindow = async (parameters: {
+  userId: string;
+  type: AlertType;
+  cooldownHours: number;
+}): Promise<boolean> => {
+  const cooldownWindowStart = new Date(
+    Date.now() - parameters.cooldownHours * 60 * 60 * 1000,
+  );
+  const existingAlertCount = await AlertModel.countDocuments({
+    userId: new Types.ObjectId(parameters.userId),
+    type: parameters.type,
+    createdAt: { $gte: cooldownWindowStart },
+  });
+
+  return existingAlertCount > 0;
 };

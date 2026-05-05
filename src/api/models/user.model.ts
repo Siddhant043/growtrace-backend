@@ -8,6 +8,8 @@ export const AUTH_TYPES = ["email", "google"] as const;
 export type AuthType = (typeof AUTH_TYPES)[number];
 export const SUBSCRIPTION_TYPES = ["free", "pro"] as const;
 export type SubscriptionType = (typeof SUBSCRIPTION_TYPES)[number];
+export const ACCOUNT_STATUSES = ["active", "suspended"] as const;
+export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 
 export const SUBSCRIPTION_STATUSES = [
   "created",
@@ -54,6 +56,16 @@ const userSchema = new Schema(
     isDeleted: {
       type: Boolean,
       default: false,
+    },
+    accountStatus: {
+      type: String,
+      enum: ACCOUNT_STATUSES,
+      default: "active",
+      index: true,
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null,
     },
     userType: {
       type: String,
@@ -133,6 +145,10 @@ const userSchema = new Schema(
     versionKey: false,
   },
 );
+
+userSchema.index({ email: 1 }, { name: "user_email_idx" });
+userSchema.index({ subscription: 1 }, { name: "user_subscription_idx" });
+userSchema.index({ createdAt: -1 }, { name: "user_created_at_desc_idx" });
 
 type SubscriptionStatusSource = Pick<
   InferSchemaType<typeof userSchema>,

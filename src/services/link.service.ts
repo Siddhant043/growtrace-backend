@@ -3,6 +3,7 @@ import { ClickEventModel } from "../api/models/clickEvent.model.js";
 import { generateShortCode } from "../api/utils/generateShortCode.js";
 import type { ListLinksRequestQuery } from "../api/validators/link.validator.js";
 import { Types } from "mongoose";
+import { env } from "../config/env.js";
 
 type CreateLinkInput = {
   originalUrl: string;
@@ -91,11 +92,11 @@ const mapLinkToResult = (linkDocument: {
   clicks: 0,
 });
 
-const withShortUrl = (linkResult: LinkResult, apiBaseUrl: string): LinkResult => {
-  const normalizedApiBaseUrl = apiBaseUrl.replace(/\/$/, "");
+const withShortUrl = (linkResult: LinkResult): LinkResult => {
+  const normalizedShortLinkBaseUrl = env.SHORT_LINK_BASE_URL.replace(/\/$/, "");
   return {
     ...linkResult,
-    shortUrl: `${normalizedApiBaseUrl}/r/${linkResult.shortCode}`,
+    shortUrl: `${normalizedShortLinkBaseUrl}/r/${linkResult.shortCode}`,
   };
 };
 
@@ -105,7 +106,6 @@ const escapeForRegex = (value: string): string =>
 export const createLink = async (
   data: CreateLinkInput,
   userId: string,
-  apiBaseUrl: string,
 ): Promise<LinkResult> => {
   const validatedOriginalUrl = ensureValidUrl(data.originalUrl);
   const shortCode = await generateUniqueShortCode();
@@ -119,13 +119,12 @@ export const createLink = async (
     campaign: data.campaign?.trim() || null,
   });
 
-  return withShortUrl(mapLinkToResult(createdLink), apiBaseUrl);
+  return withShortUrl(mapLinkToResult(createdLink));
 };
 
 export const getLinkByShortCode = async (
   shortCode: string,
   userId: string,
-  apiBaseUrl: string,
 ): Promise<LinkResult> => {
   const linkDocument = await LinkModel.findOne({ shortCode: shortCode.trim(), userId }).lean();
 
@@ -133,14 +132,13 @@ export const getLinkByShortCode = async (
     throw createApiError("Link not found", 404);
   }
 
-  return withShortUrl(mapLinkToResult(linkDocument), apiBaseUrl);
+  return withShortUrl(mapLinkToResult(linkDocument));
 };
 
 export const updateLinkByShortCode = async (
   shortCode: string,
   userId: string,
   updatePayload: UpdateLinkInput,
-  apiBaseUrl: string,
 ): Promise<LinkResult> => {
   const updateOperations: {
     originalUrl?: string;
@@ -175,7 +173,7 @@ export const updateLinkByShortCode = async (
     throw createApiError("Link not found", 404);
   }
 
-  return withShortUrl(mapLinkToResult(updatedLink), apiBaseUrl);
+  return withShortUrl(mapLinkToResult(updatedLink));
 };
 
 export const deleteLinkByShortCode = async (
@@ -203,7 +201,6 @@ export type ListLinksResult = {
 export const listLinksForUser = async (
   userId: string,
   query: ListLinksRequestQuery,
-  apiBaseUrl: string,
 ): Promise<ListLinksResult> => {
   const page = query.page;
   const pageSize = query.pageSize;
@@ -272,7 +269,7 @@ export const listLinksForUser = async (
     items: links.map((linkRecord) => {
       const mappedLinkResult = mapLinkToResult(linkRecord);
       return {
-        ...withShortUrl(mappedLinkResult, apiBaseUrl),
+        ...withShortUrl(mappedLinkResult),
         clicks: clickCountsByLinkId.get(linkRecord._id.toString()) ?? 0,
       };
     }),

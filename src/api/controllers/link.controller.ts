@@ -23,7 +23,6 @@ export const listLinks = async (request: Request, response: Response): Promise<v
   const paginatedLinks = await listLinksForUser(
     authenticatedRequest.authenticatedUser.id,
     authenticatedRequest.query,
-    `${request.protocol}://${request.get("host") ?? "localhost"}`,
   );
 
   response.status(200).json({
@@ -42,7 +41,6 @@ export const createShortLink = async (
   const createdLink = await createLink(
     request.body,
     authenticatedRequest.authenticatedUser.id,
-    `${request.protocol}://${request.get("host") ?? "localhost"}`,
   );
 
   response.status(201).json({
@@ -63,7 +61,6 @@ export const getLinkDetails = async (
   const linkRecord = await getLinkByShortCode(
     shortCode,
     authenticatedRequest.authenticatedUser.id,
-    `${request.protocol}://${request.get("host") ?? "localhost"}`,
   );
 
   response.status(200).json({
@@ -86,7 +83,6 @@ export const updateLinkDetails = async (
     shortCode,
     authenticatedRequest.authenticatedUser.id,
     authenticatedRequest.body,
-    `${request.protocol}://${request.get("host") ?? "localhost"}`,
   );
 
   response.status(200).json({

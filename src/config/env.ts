@@ -24,6 +24,10 @@ const runtimeEnvironmentSchema = z.object({
     .string()
     .url("CLIENT_APP_URL must be a valid URL")
     .default("http://localhost:3000"),
+  SHORT_LINK_BASE_URL: z
+    .string()
+    .url("SHORT_LINK_BASE_URL must be a valid URL")
+    .default("http://localhost:8000"),
   SMTP_HOST: z.string().min(1, "SMTP_HOST is required").default("localhost"),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(1025),
   SMTP_USER: z.string().default(""),

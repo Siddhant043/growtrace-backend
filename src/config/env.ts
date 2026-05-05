@@ -154,6 +154,8 @@ const runtimeEnvironmentSchema = z.object({
     .min(0)
     .max(168)
     .default(24),
+  BULL_BOARD_USERNAME: z.string().min(1, "BULL_BOARD_USERNAME is required"),
+  BULL_BOARD_PASSWORD: z.string().min(1, "BULL_BOARD_PASSWORD is required"),
 });
 
 const parsedRuntimeEnvironment = runtimeEnvironmentSchema.safeParse(

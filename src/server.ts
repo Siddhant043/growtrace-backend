@@ -40,6 +40,46 @@ import { startAlertsDispatchWorker } from "./workers/alertsDispatch.worker.js";
 
 const app = express();
 
+const requireBullBoardBasicAuthMiddleware = (
+  request: Request,
+  response: Response,
+  next: () => void,
+): void => {
+  const authorizationHeaderValue = request.headers.authorization;
+
+  if (!authorizationHeaderValue?.startsWith("Basic ")) {
+    response.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
+    response.status(401).send("Authentication required");
+    return;
+  }
+
+  const base64EncodedCredentials = authorizationHeaderValue.slice("Basic ".length);
+  const decodedCredentials = Buffer.from(base64EncodedCredentials, "base64").toString(
+    "utf8",
+  );
+  const firstColonSeparatorIndex = decodedCredentials.indexOf(":");
+
+  if (firstColonSeparatorIndex === -1) {
+    response.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
+    response.status(401).send("Invalid credentials format");
+    return;
+  }
+
+  const providedUsername = decodedCredentials.slice(0, firstColonSeparatorIndex);
+  const providedPassword = decodedCredentials.slice(firstColonSeparatorIndex + 1);
+  const hasValidCredentials =
+    providedUsername === env.BULL_BOARD_USERNAME &&
+    providedPassword === env.BULL_BOARD_PASSWORD;
+
+  if (!hasValidCredentials) {
+    response.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
+    response.status(401).send("Invalid username or password");
+    return;
+  }
+
+  next();
+};
+
 const apiRequestLoggerMiddleware = (
   request: Request,
   response: Response,
@@ -97,7 +137,11 @@ if (shouldEnableRateLimiting) {
 app.use("/track", trackRouter);
 
 const bullBoardServerAdapter = createBullBoardServerAdapter();
-app.use(BULL_BOARD_BASE_PATH, bullBoardServerAdapter.getRouter());
+app.use(
+  BULL_BOARD_BASE_PATH,
+  requireBullBoardBasicAuthMiddleware,
+  bullBoardServerAdapter.getRouter(),
+);
 
 app.use("/api", apiRequestLoggerMiddleware);
 app.use("/api", apiRouter);

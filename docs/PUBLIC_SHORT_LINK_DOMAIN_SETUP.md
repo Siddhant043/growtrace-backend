@@ -141,3 +141,21 @@ Check create-link response host in `shortUrl`:
 - create link via dashboard
 - confirm returned `shortUrl` starts with `https://go.growtrace.in/`
 
+---
+
+## 7) Queue Admin Access Protection
+
+The Bull Board route (`/admin/queues`) is protected with HTTP Basic Auth.
+
+Set these environment variables on the server:
+
+```env
+BULL_BOARD_USERNAME=<queue_admin_username>
+BULL_BOARD_PASSWORD=<strong_queue_admin_password>
+```
+
+Behavior:
+
+- server startup fails if either variable is missing
+- requests to `/admin/queues` return `401` unless valid Basic Auth credentials are provided
+

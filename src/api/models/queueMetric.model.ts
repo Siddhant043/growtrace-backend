@@ -45,8 +45,6 @@ const queueMetricSchema = new Schema(
   },
 );
 
-queueMetricSchema.index({ queueName: 1 });
-queueMetricSchema.index({ timestamp: -1 });
 queueMetricSchema.index({ queueName: 1, timestamp: 1 }, { unique: true });
 
 export type QueueMetricDocument = InferSchemaType<typeof queueMetricSchema> & {

@@ -49,9 +49,6 @@ const errorLogSchema = new Schema(
 );
 
 errorLogSchema.index({ createdAt: -1 });
-errorLogSchema.index({ severity: 1 });
-errorLogSchema.index({ source: 1 });
-errorLogSchema.index({ service: 1 });
 
 export type ErrorLogDocument = InferSchemaType<typeof errorLogSchema> & {
   _id: Types.ObjectId;

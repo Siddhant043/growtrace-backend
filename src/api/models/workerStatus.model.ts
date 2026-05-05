@@ -45,10 +45,6 @@ const workerStatusSchema = new Schema(
   },
 );
 
-workerStatusSchema.index({ workerName: 1 });
-workerStatusSchema.index({ status: 1 });
-workerStatusSchema.index({ lastHeartbeatAt: -1 });
-
 export type WorkerStatusDocument = InferSchemaType<typeof workerStatusSchema> & {
   _id: Types.ObjectId;
 };

@@ -59,10 +59,13 @@ const requireBullBoardBasicAuthMiddleware = (
     return;
   }
 
-  const base64EncodedCredentials = authorizationHeaderValue.slice("Basic ".length);
-  const decodedCredentials = Buffer.from(base64EncodedCredentials, "base64").toString(
-    "utf8",
+  const base64EncodedCredentials = authorizationHeaderValue.slice(
+    "Basic ".length,
   );
+  const decodedCredentials = Buffer.from(
+    base64EncodedCredentials,
+    "base64",
+  ).toString("utf8");
   const firstColonSeparatorIndex = decodedCredentials.indexOf(":");
 
   if (firstColonSeparatorIndex === -1) {
@@ -71,8 +74,13 @@ const requireBullBoardBasicAuthMiddleware = (
     return;
   }
 
-  const providedUsername = decodedCredentials.slice(0, firstColonSeparatorIndex);
-  const providedPassword = decodedCredentials.slice(firstColonSeparatorIndex + 1);
+  const providedUsername = decodedCredentials.slice(
+    0,
+    firstColonSeparatorIndex,
+  );
+  const providedPassword = decodedCredentials.slice(
+    firstColonSeparatorIndex + 1,
+  );
   const hasValidCredentials =
     providedUsername === env.BULL_BOARD_USERNAME &&
     providedPassword === env.BULL_BOARD_PASSWORD;
@@ -132,8 +140,8 @@ const shouldEnableRateLimiting = !["development", "test"].includes(env.ENV);
 if (shouldEnableRateLimiting) {
   app.use(
     rateLimit({
-      windowMs: 10 * 60 * 1000, // 10 minutes
-      limit: 500, // Limit each IP to 500 requests per `windowMs`
+      windowMs: 1 * 60 * 1000, // 1 minute
+      limit: 100, // Limit each IP to 10000 requests per `windowMs`
       message: "Too many requests, please try again later.",
       standardHeaders: true,
       legacyHeaders: false,

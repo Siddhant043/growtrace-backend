@@ -5,6 +5,7 @@ import adminAnalyticsRouter from "./admin.analytics.js";
 import adminAlertsRouter from "./admin.alerts.js";
 import adminAudienceRouter from "./admin.audience.js";
 import adminBillingRouter from "./admin.billing.js";
+import adminDashboardRouter from "./admin.dashboard.js";
 import adminInsightsRouter from "./admin.insights.js";
 import adminReportsRouter from "./admin.reports.js";
 import adminSettingsRouter from "./admin.settings.js";
@@ -30,6 +31,7 @@ const apiRouter = Router();
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/admin/users", adminUsersRouter);
+apiRouter.use("/admin/dashboard", adminDashboardRouter);
 apiRouter.use("/admin", adminBillingRouter);
 apiRouter.use("/admin/analytics", adminAnalyticsRouter);
 apiRouter.use("/admin/insights", adminInsightsRouter);

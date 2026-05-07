@@ -385,21 +385,16 @@ const getAlertsSummary = async (
 const getSummary = async (): Promise<DashboardSummary> => {
   const todayIsoDate = formatDateAsUtcIsoDate(new Date());
 
-  const [totalUsers, totalLinks, proUsers, clicksAggregationRows, todayUsage, mrr] =
-    await Promise.all([
-      UserModel.countDocuments({ isDeleted: false }),
-      LinkModel.countDocuments({}),
-      UserModel.countDocuments({ isDeleted: false, subscription: "pro" }),
-      AdminUsageMetricsDailyModel.aggregate<{ _id: null; totalClicks: number }>([
-        { $group: { _id: null, totalClicks: { $sum: "$totalClicks" } } },
-      ]),
-      AdminUsageMetricsDailyModel.findOne({ date: todayIsoDate })
-        .select("activeUsers")
-        .lean(),
-      computeMrr(),
-    ]);
-
-  const totalClicks = clicksAggregationRows[0]?.totalClicks ?? 0;
+  const [totalUsers, totalLinks, proUsers, totalClicks, todayUsage, mrr] = await Promise.all([
+    UserModel.countDocuments({ isDeleted: false }),
+    LinkModel.countDocuments({}),
+    UserModel.countDocuments({ isDeleted: false, subscription: "pro" }),
+    ClickEventModel.countDocuments({}),
+    AdminUsageMetricsDailyModel.findOne({ date: todayIsoDate })
+      .select("activeUsers")
+      .lean(),
+    computeMrr(),
+  ]);
   const activeUsers = todayUsage?.activeUsers ?? 0;
 
   return {

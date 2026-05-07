@@ -97,8 +97,21 @@ export const listAdminSystemErrors = async (parameters: {
   source?: ErrorLogSource;
   startDate?: string;
   endDate?: string;
+  sortBy?: "createdAt" | "severity" | "source";
+  sortOrder?: "asc" | "desc";
 }) => {
   const skip = (parameters.page - 1) * parameters.limit;
+  const sortDirection = parameters.sortOrder === "asc" ? 1 : -1;
+  const errorsSort: Record<string, 1 | -1> = {};
+  if (parameters.sortBy === "severity") {
+    errorsSort.severity = sortDirection;
+    errorsSort.createdAt = -1;
+  } else if (parameters.sortBy === "source") {
+    errorsSort.source = sortDirection;
+    errorsSort.createdAt = -1;
+  } else {
+    errorsSort.createdAt = sortDirection;
+  }
   const dateRangeFilter = buildDateRangeFilter(
     parameters.startDate,
     parameters.endDate,
@@ -121,7 +134,7 @@ export const listAdminSystemErrors = async (parameters: {
 
   const [errors, total] = await Promise.all([
     ErrorLogModel.find(query)
-      .sort({ createdAt: -1 })
+      .sort(errorsSort)
       .skip(skip)
       .limit(parameters.limit)
       .lean(),

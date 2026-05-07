@@ -26,6 +26,8 @@ export const listAdminReportsController = async (
     limit: query.limit ?? 20,
     userId: query.userId,
     status: query.status,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
   });
   response.status(200).json(data);
 };

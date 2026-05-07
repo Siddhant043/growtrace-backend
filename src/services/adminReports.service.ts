@@ -56,11 +56,25 @@ export const listAdminReports = async (filters: {
   limit: number;
   userId?: string;
   status?: WeeklyReportDeliveryStatus;
+  sortBy?: "weekStart" | "updatedAt" | "deliveryStatus";
+  sortOrder?: "asc" | "desc";
 }): Promise<{
   reports: Array<ReturnType<typeof formatReport>>;
   pagination: Pagination;
 }> => {
   const skip = (filters.page - 1) * filters.limit;
+  const sortDirection = filters.sortOrder === "asc" ? 1 : -1;
+  const reportsSort: Record<string, 1 | -1> = {};
+  if (filters.sortBy === "updatedAt") {
+    reportsSort.updatedAt = sortDirection;
+    reportsSort.createdAt = -1;
+  } else if (filters.sortBy === "deliveryStatus") {
+    reportsSort.deliveryStatus = sortDirection;
+    reportsSort.createdAt = -1;
+  } else {
+    reportsSort.weekStart = sortDirection;
+    reportsSort.createdAt = -1;
+  }
   const query: {
     userId?: Types.ObjectId;
     deliveryStatus?: WeeklyReportDeliveryStatus;
@@ -75,7 +89,7 @@ export const listAdminReports = async (filters: {
 
   const [reports, total] = await Promise.all([
     WeeklyReportModel.find(query)
-      .sort({ weekStart: -1, createdAt: -1 })
+      .sort(reportsSort)
       .skip(skip)
       .limit(filters.limit)
       .select("userId weekStart weekEnd summary deliveryStatus createdAt updatedAt")

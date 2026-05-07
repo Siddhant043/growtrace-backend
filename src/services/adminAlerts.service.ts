@@ -43,8 +43,18 @@ export const listAdminAlerts = async (filters: {
   userId?: string;
   startDate?: string;
   endDate?: string;
+  sortBy?: "createdAt" | "type";
+  sortOrder?: "asc" | "desc";
 }) => {
   const skip = (filters.page - 1) * filters.limit;
+  const sortDirection = filters.sortOrder === "asc" ? 1 : -1;
+  const alertsSort: Record<string, 1 | -1> = {};
+  if (filters.sortBy === "type") {
+    alertsSort.type = sortDirection;
+    alertsSort.createdAt = -1;
+  } else {
+    alertsSort.createdAt = sortDirection;
+  }
   const query: {
     type?: AlertType;
     userId?: Types.ObjectId;
@@ -69,7 +79,7 @@ export const listAdminAlerts = async (filters: {
 
   const [alerts, total, groupedCounts] = await Promise.all([
     AlertModel.find(query)
-      .sort({ createdAt: -1 })
+      .sort(alertsSort)
       .skip(skip)
       .limit(filters.limit)
       .lean(),

@@ -14,6 +14,10 @@ const isoDateSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "must be in YYYY-MM-DD format");
 const pageQuerySchema = z.coerce.number().int().min(1).default(1);
 const limitQuerySchema = z.coerce.number().int().min(1).max(100).default(20);
+const sortOrderSchema = z.enum(["asc", "desc"]).default("desc");
+const supportEventsSortBySchema = z
+  .enum(["createdAt", "eventType", "platform"])
+  .default("createdAt");
 
 export const getAdminUserActivityRequestSchema = z.object({
   params: z.object({
@@ -37,6 +41,8 @@ export const listAdminSupportEventsRequestSchema = z.object({
     eventType: z.enum(BEHAVIOR_EVENT_TYPES).optional(),
     startDate: isoDateSchema.optional(),
     endDate: isoDateSchema.optional(),
+    sortBy: supportEventsSortBySchema.optional(),
+    sortOrder: sortOrderSchema.optional(),
   }),
 });
 

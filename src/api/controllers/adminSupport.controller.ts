@@ -44,6 +44,8 @@ export const listAdminSupportEventsController = async (
     eventType: query.eventType,
     startDate: query.startDate,
     endDate: query.endDate,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
   });
   response.status(200).json(data);
 };

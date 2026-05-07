@@ -25,6 +25,8 @@ export type ListAdminSubscriptionsFilters = {
   limit: number;
   status?: "active" | "cancelled" | "expired";
   search?: string;
+  sortBy?: "createdAt" | "currentPeriodEnd" | "status";
+  sortOrder?: "asc" | "desc";
 };
 
 export type ListAdminPaymentsFilters = {
@@ -34,6 +36,8 @@ export type ListAdminPaymentsFilters = {
   userId?: string;
   fromDate?: string;
   toDate?: string;
+  sortBy?: "createdAt" | "amount" | "status";
+  sortOrder?: "asc" | "desc";
 };
 
 export type AdminSubscriptionListItem = {
@@ -77,6 +81,7 @@ export const listAdminSubscriptions = async (
   pagination: { total: number; page: number; limit: number };
 }> => {
   const skip = (filters.page - 1) * filters.limit;
+  const sortDirection = filters.sortOrder === "asc" ? 1 : -1;
 
   const pipeline: PipelineStage[] = [
     {
@@ -115,8 +120,19 @@ export const listAdminSubscriptions = async (
     });
   }
 
+  const subscriptionsSort: Record<string, 1 | -1> = {};
+  if (filters.sortBy === "status") {
+    subscriptionsSort.status = sortDirection;
+    subscriptionsSort.createdAt = -1;
+  } else if (filters.sortBy === "currentPeriodEnd") {
+    subscriptionsSort.currentEnd = sortDirection;
+    subscriptionsSort.createdAt = -1;
+  } else {
+    subscriptionsSort.createdAt = sortDirection;
+  }
+
   pipeline.push(
-    { $sort: { createdAt: -1 } },
+    { $sort: subscriptionsSort },
     {
       $facet: {
         data: [
@@ -247,6 +263,17 @@ const listAdminPaymentsByStatus = async (
 }> => {
   const skip = (filters.page - 1) * filters.limit;
   const dateRangeFilter = resolveDateRangeFilter(filters.fromDate, filters.toDate);
+  const sortDirection = filters.sortOrder === "asc" ? 1 : -1;
+  const paymentsSort: Record<string, 1 | -1> = {};
+  if (filters.sortBy === "amount") {
+    paymentsSort.amount = sortDirection;
+    paymentsSort.createdAt = -1;
+  } else if (filters.sortBy === "status") {
+    paymentsSort.status = sortDirection;
+    paymentsSort.createdAt = -1;
+  } else {
+    paymentsSort.createdAt = sortDirection;
+  }
 
   const paymentQuery: {
     status?: PaymentStatus;
@@ -268,7 +295,7 @@ const listAdminPaymentsByStatus = async (
 
   const [payments, total] = await Promise.all([
     PaymentModel.find(paymentQuery)
-      .sort({ createdAt: -1 })
+      .sort(paymentsSort)
       .skip(skip)
       .limit(filters.limit)
       .select("userId amount currency status method failureReason createdAt")

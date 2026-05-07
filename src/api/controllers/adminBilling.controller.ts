@@ -41,6 +41,8 @@ export const listAdminSubscriptionsController = async (
       limit,
       status: query?.status,
       search: query?.search,
+      sortBy: query?.sortBy,
+      sortOrder: query?.sortOrder,
     });
     response.status(200).json(subscriptions);
   } catch (error) {
@@ -75,6 +77,8 @@ export const listAdminPaymentsController = async (
     userId: query?.userId,
     fromDate: query?.fromDate,
     toDate: query?.toDate,
+    sortBy: query?.sortBy,
+    sortOrder: query?.sortOrder,
   });
   response.status(200).json(payments);
 };
@@ -90,6 +94,8 @@ export const listFailedAdminPaymentsController = async (
     userId: query?.userId,
     fromDate: query?.fromDate,
     toDate: query?.toDate,
+    sortBy: query?.sortBy,
+    sortOrder: query?.sortOrder,
   });
   response.status(200).json(failedPayments);
 };

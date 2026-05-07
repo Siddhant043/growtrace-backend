@@ -24,6 +24,8 @@ export const listAdminInsightsController = async (
     userId: query.userId,
     startDate: query.startDate,
     endDate: query.endDate,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
   });
 
   response.status(200).json(insightsResponse);
@@ -37,6 +39,8 @@ export const listFailedAdminInsightsController = async (
   const failedJobsResponse = await listFailedInsightJobs({
     page: query.page ?? 1,
     limit: query.limit ?? 20,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
   });
 
   response.status(200).json(failedJobsResponse);

@@ -9,6 +9,10 @@ const objectIdParamSchema = z
 
 const pageQuerySchema = z.coerce.number().int().min(1).default(1);
 const limitQuerySchema = z.coerce.number().int().min(1).max(100).default(20);
+const sortOrderSchema = z.enum(["asc", "desc"]).default("desc");
+const reportsSortBySchema = z
+  .enum(["weekStart", "updatedAt", "deliveryStatus"])
+  .default("weekStart");
 
 const reportDeliveryStatusSchema = z.enum(["pending", "emailed", "failed", "skipped"]);
 const reportJobStatusSchema = z.enum(REPORT_JOB_STATUSES);
@@ -19,6 +23,8 @@ export const listAdminReportsRequestSchema = z.object({
     limit: limitQuerySchema.optional(),
     userId: objectIdParamSchema.optional(),
     status: reportDeliveryStatusSchema.optional(),
+    sortBy: reportsSortBySchema.optional(),
+    sortOrder: sortOrderSchema.optional(),
   }),
 });
 

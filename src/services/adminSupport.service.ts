@@ -119,12 +119,25 @@ export const listAdminSupportEvents = async (parameters: {
   eventType?: BehaviorEventType;
   startDate?: string;
   endDate?: string;
+  sortBy?: "createdAt" | "eventType" | "platform";
+  sortOrder?: "asc" | "desc";
 }) => {
   const dateRangeFilter = buildDateRangeFilter(
     parameters.startDate,
     parameters.endDate,
   );
   const skip = (parameters.page - 1) * parameters.limit;
+  const sortDirection = parameters.sortOrder === "asc" ? 1 : -1;
+  const eventsSort: Record<string, 1 | -1> = {};
+  if (parameters.sortBy === "eventType") {
+    eventsSort.eventType = sortDirection;
+    eventsSort.timestamp = -1;
+  } else if (parameters.sortBy === "platform") {
+    eventsSort.platform = sortDirection;
+    eventsSort.timestamp = -1;
+  } else {
+    eventsSort.timestamp = sortDirection;
+  }
   const query: {
     userTrackingId?: string;
     sessionId?: string;
@@ -146,7 +159,7 @@ export const listAdminSupportEvents = async (parameters: {
 
   const [events, total] = await Promise.all([
     BehaviorEventModel.find(query)
-      .sort({ timestamp: -1 })
+      .sort(eventsSort)
       .skip(skip)
       .limit(parameters.limit)
       .lean(),

@@ -9,6 +9,13 @@ const objectIdParamSchema = z
 
 const pageQuerySchema = z.coerce.number().int().min(1).default(1);
 const limitQuerySchema = z.coerce.number().int().min(1).max(50).default(20);
+const sortOrderSchema = z.enum(["asc", "desc"]).default("desc");
+const insightsSortBySchema = z
+  .enum(["createdAt", "confidence", "type"])
+  .default("createdAt");
+const failedInsightsSortBySchema = z
+  .enum(["createdAt", "retryCount"])
+  .default("createdAt");
 
 const isoDateSchema = z
   .string()
@@ -25,6 +32,8 @@ export const listAdminInsightsRequestSchema = z.object({
     userId: z.string().trim().min(1).max(120).optional(),
     startDate: isoDateSchema.optional(),
     endDate: isoDateSchema.optional(),
+    sortBy: insightsSortBySchema.optional(),
+    sortOrder: sortOrderSchema.optional(),
   }),
 });
 
@@ -32,6 +41,8 @@ export const listFailedAdminInsightsRequestSchema = z.object({
   query: z.object({
     page: pageQuerySchema.optional(),
     limit: limitQuerySchema.optional(),
+    sortBy: failedInsightsSortBySchema.optional(),
+    sortOrder: sortOrderSchema.optional(),
   }),
 });
 

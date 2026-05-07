@@ -9,6 +9,8 @@ const objectIdParamSchema = z
 
 const pageQuerySchema = z.coerce.number().int().min(1).default(1);
 const limitQuerySchema = z.coerce.number().int().min(1).max(50).default(20);
+const sortOrderSchema = z.enum(["asc", "desc"]).default("desc");
+const alertsSortBySchema = z.enum(["createdAt", "type"]).default("createdAt");
 const isoDateSchema = z
   .string()
   .trim()
@@ -22,6 +24,8 @@ export const listAdminAlertsRequestSchema = z.object({
     userId: z.string().trim().regex(/^[a-f\d]{24}$/i).optional(),
     startDate: isoDateSchema.optional(),
     endDate: isoDateSchema.optional(),
+    sortBy: alertsSortBySchema.optional(),
+    sortOrder: sortOrderSchema.optional(),
   }),
 });
 

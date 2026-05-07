@@ -24,6 +24,8 @@ export const listAdminUsersController = async (
     search: query.search,
     status: query.status,
     plan: query.plan,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
   });
 
   response.status(200).json(usersResponse);
@@ -40,6 +42,8 @@ export const listSuspendedAdminUsersController = async (
     search: query.search,
     status: "suspended",
     plan: query.plan,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
   });
 
   response.status(200).json(usersResponse);

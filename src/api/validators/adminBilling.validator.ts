@@ -10,6 +10,13 @@ const objectIdParamSchema = z
 
 const pageQuerySchema = z.coerce.number().int().min(1).default(1);
 const limitQuerySchema = z.coerce.number().int().min(1).max(100).default(20);
+const sortOrderSchema = z.enum(["asc", "desc"]).default("desc");
+const subscriptionsSortBySchema = z
+  .enum(["createdAt", "currentPeriodEnd", "status"])
+  .default("createdAt");
+const paymentsSortBySchema = z
+  .enum(["createdAt", "amount", "status"])
+  .default("createdAt");
 
 const ADMIN_SUBSCRIPTION_FILTER_STATUSES = SUBSCRIPTION_STATUSES.filter(
   (status) => status === "active" || status === "cancelled" || status === "expired",
@@ -27,6 +34,8 @@ export const listAdminSubscriptionsRequestSchema = z.object({
       limit: limitQuerySchema.optional(),
       status: z.enum(ADMIN_SUBSCRIPTION_FILTER_STATUSES).optional(),
       search: z.string().trim().min(1).max(120).optional(),
+      sortBy: subscriptionsSortBySchema.optional(),
+      sortOrder: sortOrderSchema.optional(),
     })
     .optional(),
 });
@@ -46,6 +55,8 @@ export const listAdminPaymentsRequestSchema = z.object({
       userId: objectIdParamSchema.optional(),
       fromDate: isoDateStringSchema.optional(),
       toDate: isoDateStringSchema.optional(),
+      sortBy: paymentsSortBySchema.optional(),
+      sortOrder: sortOrderSchema.optional(),
     })
     .optional(),
 });
@@ -58,6 +69,8 @@ export const listFailedPaymentsRequestSchema = z.object({
       userId: objectIdParamSchema.optional(),
       fromDate: isoDateStringSchema.optional(),
       toDate: isoDateStringSchema.optional(),
+      sortBy: paymentsSortBySchema.optional(),
+      sortOrder: sortOrderSchema.optional(),
     })
     .optional(),
 });

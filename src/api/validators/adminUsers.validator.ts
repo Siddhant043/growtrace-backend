@@ -9,6 +9,10 @@ const objectIdParamSchema = z
 
 const pageQuerySchema = z.coerce.number().int().min(1).default(1);
 const limitQuerySchema = z.coerce.number().int().min(1).max(50).default(20);
+const sortOrderSchema = z.enum(["asc", "desc"]).default("desc");
+const usersSortBySchema = z
+  .enum(["createdAt", "email", "totalClicks"])
+  .default("createdAt");
 
 export const listAdminUsersRequestSchema = z.object({
   query: z.object({
@@ -17,6 +21,8 @@ export const listAdminUsersRequestSchema = z.object({
     search: z.string().trim().min(1).max(120).optional(),
     status: z.enum(ACCOUNT_STATUSES).optional(),
     plan: z.enum(SUBSCRIPTION_TYPES).optional(),
+    sortBy: usersSortBySchema.optional(),
+    sortOrder: sortOrderSchema.optional(),
   }),
 });
 

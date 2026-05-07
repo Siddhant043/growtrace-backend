@@ -30,6 +30,8 @@ type ListAdminInsightsFilters = {
   userId?: string;
   startDate?: string;
   endDate?: string;
+  sortBy?: "createdAt" | "confidence" | "type";
+  sortOrder?: "asc" | "desc";
 };
 
 type DateRangeFilter = {
@@ -57,6 +59,17 @@ const buildCreatedAtDateRangeFilter = (
 
 export const listAdminInsights = async (filters: ListAdminInsightsFilters) => {
   const skip = (filters.page - 1) * filters.limit;
+  const sortDirection = filters.sortOrder === "asc" ? 1 : -1;
+  const insightsSort: Record<string, 1 | -1> = {};
+  if (filters.sortBy === "confidence") {
+    insightsSort.confidence = sortDirection;
+    insightsSort.createdAt = -1;
+  } else if (filters.sortBy === "type") {
+    insightsSort.type = sortDirection;
+    insightsSort.createdAt = -1;
+  } else {
+    insightsSort.createdAt = sortDirection;
+  }
   const createdAtFilter = buildCreatedAtDateRangeFilter(
     filters.startDate,
     filters.endDate,
@@ -80,7 +93,7 @@ export const listAdminInsights = async (filters: ListAdminInsightsFilters) => {
 
   const [insights, total] = await Promise.all([
     InsightReadModel.find(query)
-      .sort({ createdAt: -1 })
+      .sort(insightsSort)
       .skip(skip)
       .limit(filters.limit)
       .select("userId type message confidence createdAt status")
@@ -109,13 +122,23 @@ export const listAdminInsights = async (filters: ListAdminInsightsFilters) => {
 export const listFailedInsightJobs = async (filters: {
   page: number;
   limit: number;
+  sortBy?: "createdAt" | "retryCount";
+  sortOrder?: "asc" | "desc";
 }) => {
   const skip = (filters.page - 1) * filters.limit;
   const query = { status: "failed" as const };
+  const sortDirection = filters.sortOrder === "asc" ? 1 : -1;
+  const failedJobsSort: Record<string, 1 | -1> = {};
+  if (filters.sortBy === "retryCount") {
+    failedJobsSort.retryCount = sortDirection;
+    failedJobsSort.createdAt = -1;
+  } else {
+    failedJobsSort.createdAt = sortDirection;
+  }
 
   const [jobs, total] = await Promise.all([
     InsightJobModel.find(query)
-      .sort({ createdAt: -1 })
+      .sort(failedJobsSort)
       .skip(skip)
       .limit(filters.limit)
       .select("userId jobId status error.message retryCount createdAt updatedAt")

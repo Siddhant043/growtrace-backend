@@ -15,6 +15,8 @@ type AdminUserListFilters = {
   search?: string;
   status?: AccountStatus;
   plan?: SubscriptionType;
+  sortBy?: "createdAt" | "email" | "totalClicks";
+  sortOrder?: "asc" | "desc";
 };
 
 export type AdminUserListItem = {
@@ -108,6 +110,13 @@ export const listAdminUsers = async (
   pagination: { total: number; page: number; limit: number };
 }> => {
   const skip = (filters.page - 1) * filters.limit;
+  const normalizedSortOrder = filters.sortOrder === "asc" ? 1 : -1;
+  const querySort: Record<string, 1 | -1> = {};
+  if (filters.sortBy === "email") {
+    querySort.email = normalizedSortOrder;
+  } else {
+    querySort.createdAt = normalizedSortOrder;
+  }
   const baseQuery: {
     isDeleted: boolean;
     accountStatus?: AccountStatus;
@@ -133,7 +142,7 @@ export const listAdminUsers = async (
 
   const [users, total] = await Promise.all([
     UserModel.find(baseQuery)
-      .sort({ createdAt: -1 })
+      .sort(querySort)
       .skip(skip)
       .limit(filters.limit)
       .select("email fullName subscription accountStatus createdAt")
@@ -152,6 +161,14 @@ export const listAdminUsers = async (
       stats: await resolveUserStats(user._id.toString()),
     })),
   );
+
+  if (filters.sortBy === "totalClicks") {
+    usersWithStats.sort((leftUser, rightUser) => {
+      return (
+        normalizedSortOrder * (leftUser.stats.totalClicks - rightUser.stats.totalClicks)
+      );
+    });
+  }
 
   return {
     users: usersWithStats,

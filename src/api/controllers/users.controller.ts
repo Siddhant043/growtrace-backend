@@ -5,6 +5,8 @@ import { UserModel } from '../models/user.model.js'
 import type { AuthenticatedRequest } from '../middlewares/authenticate.js'
 import { getEffectivePlanForUser } from '../../services/planInfo.service.js'
 import type { UpdatePasswordRequestBody } from '../validators/auth.validator.js'
+import type { SubmitMyFeedbackRequestBody } from '../validators/userFeedback.validator.js'
+import { submitUserFeedback } from '../../services/userFeedback.service.js'
 
 const mapUserProfileResponse = (user: {
   _id: { toString(): string }
@@ -114,6 +116,28 @@ export const getCurrentUserPlan = async (
       cancelAtCycleEnd: planInfo.cancelAtCycleEnd,
       lifetime: planInfo.lifetime,
       manage: planInfo.manage,
+    },
+  })
+}
+
+export const submitMyFeedbackController = async (
+  request: Request<unknown, unknown, SubmitMyFeedbackRequestBody>,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = request as AuthenticatedRequest
+  const submissionResult = await submitUserFeedback({
+    userId: authenticatedRequest.authenticatedUser.id,
+    message: request.body.message,
+    category: request.body.category ?? 'feature_request',
+  })
+
+  response.status(201).json({
+    success: true,
+    data: {
+      id: submissionResult.id,
+      email: submissionResult.email,
+      category: submissionResult.category,
+      submittedAt: submissionResult.submittedAt.toISOString(),
     },
   })
 }

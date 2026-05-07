@@ -9,6 +9,10 @@ import {
   buildWeeklyReportEmail,
   type WeeklyReportEmailViewModel,
 } from "../templates/weeklyReport.email.js";
+import {
+  buildFeedbackEmail,
+  type FeedbackEmailViewModel,
+} from "../templates/feedback.email.js";
 
 let mailTransporter: nodemailer.Transporter | null = null;
 
@@ -108,6 +112,32 @@ export const sendAlertEmail = async (
   const sendResult = await transporter.sendMail({
     from: fromAddress,
     to: formattedRecipient,
+    subject: builtEmail.subject,
+    html: builtEmail.html,
+    text: builtEmail.text,
+  });
+
+  return { messageId: sendResult.messageId };
+};
+
+export type SendFeedbackEmailParameters = {
+  recipientEmail: string;
+  viewModel: FeedbackEmailViewModel;
+};
+
+export type SendFeedbackEmailResult = {
+  messageId: string;
+};
+
+export const sendFeedbackEmail = async (
+  parameters: SendFeedbackEmailParameters,
+): Promise<SendFeedbackEmailResult> => {
+  const transporter = getMailTransporter();
+  const builtEmail = buildFeedbackEmail(parameters.viewModel);
+
+  const sendResult = await transporter.sendMail({
+    from: env.SMTP_FROM,
+    to: parameters.recipientEmail,
     subject: builtEmail.subject,
     html: builtEmail.html,
     text: builtEmail.text,

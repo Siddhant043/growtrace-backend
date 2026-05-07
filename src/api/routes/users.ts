@@ -3,12 +3,14 @@ import { Router } from "express";
 import {
   getCurrentUserPlan,
   getCurrentUserProfile,
+  submitMyFeedbackController,
   updateCurrentUserPassword,
 } from "../controllers/users.controller.js";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
 import { authenticate } from "../middlewares/authenticate.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
 import { updatePasswordRequestSchema } from "../validators/auth.validator.js";
+import { submitMyFeedbackRequestSchema } from "../validators/userFeedback.validator.js";
 
 const router = Router();
 
@@ -29,6 +31,13 @@ router.post(
   asyncHandler(authenticate),
   validateRequest(updatePasswordRequestSchema),
   asyncHandler(updateCurrentUserPassword),
+);
+
+router.post(
+  "/me/feedback",
+  asyncHandler(authenticate),
+  validateRequest(submitMyFeedbackRequestSchema),
+  asyncHandler(submitMyFeedbackController),
 );
 
 export default router;

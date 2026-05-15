@@ -803,7 +803,8 @@ export const buildAlertsDetectionJobId = (
   reason: AlertsDetectionReason,
 ): string => {
   const hourBucket = computeCurrentAlertsHourBucket();
-  return `det:${userId}:${reason}:${hourBucket}`;
+  // BullMQ forbids ":" in custom jobId (Job.validateOptions).
+  return `det-${userId}-${reason}-${hourBucket}`;
 };
 
 export const enqueuePerUserAlertsDetectionJob = async (

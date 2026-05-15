@@ -167,6 +167,10 @@ const fanOutAttributionTouchpointForBehaviorEvent = async ({
   linkIdValueIfValid,
   userAgentHeader,
 }: FanOutAttributionParameters): Promise<void> => {
+  if (eventBody.eventType === "time_spent") {
+    return;
+  }
+
   const behaviorEventForMapper: BehaviorEventForAttribution = {
     eventType: eventBody.eventType,
     durationSeconds: eventBody.metrics.duration ?? null,

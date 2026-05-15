@@ -18,7 +18,7 @@ flowchart LR
     userBrowser[User Browser] -->|click short link| redirectEndpoint["GET /r/:shortCode"]
     redirectEndpoint -->|302 + gt_link_id| destinationPage[Destination Page]
     destinationPage -->|loads sdk| sdkAsset["GET /sdk/track.js"]
-    destinationPage -->|page_view scroll exit| trackEndpoint["POST /track"]
+    destinationPage -->|page_view time_spent scroll exit| trackEndpoint["POST /track"]
     trackEndpoint -->|enqueue job| behaviorQueue[(BullMQ behaviorEvents)]
     behaviorQueue --> workerProcess[behaviorEvents worker]
     workerProcess --> behaviorEventsCollection[(behavior_events)]
@@ -70,9 +70,10 @@ window.growtrace.track("scroll", { scrollDepth: 72 });
 Core SDK behavior:
 
 - Tracks `page_view` on init
-- Tracks max scroll depth with 300ms throttle
+- Periodically sends `time_spent` (default every 30s) with active duration and max scroll depth so `sessions` update before unload; set `heartbeatIntervalMs: 0` in `init()` to disable
+- Tracks max scroll depth with 300ms throttle (in memory until flushed via `time_spent` / `exit`)
 - Tracks active duration using visibility/focus/blur
-- Sends `exit` on `pagehide` / hidden state using `sendBeacon` fallback to keepalive `fetch`
+- Sends `exit` on `pagehide` / hidden state using `sendBeacon` fallback to keepalive `fetch` (final snapshot; heartbeats stop first)
 - Captures and persists `gt_link_id` for current session attribution
 - Uses returning-user marker `gt_seen`
 

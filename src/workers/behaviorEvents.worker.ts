@@ -13,7 +13,10 @@ import {
 import { SessionModel } from "../api/models/session.model.js";
 import { parseUserAgent } from "../api/utils/parseUserAgent.js";
 import { getLinkMetadataSummary } from "../api/utils/linkMetadataCache.js";
-import { BOUNCE_DURATION_THRESHOLD_SECONDS } from "../api/constants/engagement.js";
+import {
+  BOUNCE_DURATION_THRESHOLD_SECONDS,
+  SESSION_DURATION_CAP_SECONDS,
+} from "../api/constants/engagement.js";
 import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 
 const toObjectIdOrNull = (
@@ -160,6 +163,35 @@ const updateSessionForExit = async (
   );
 };
 
+const updateSessionForTimeSpent = async (
+  jobPayload: BehaviorEventJobPayload,
+  eventTimestamp: Date,
+): Promise<void> => {
+  const rawDuration = jobPayload.metrics.duration ?? 0;
+  const measuredDurationSeconds = Math.min(
+    rawDuration,
+    SESSION_DURATION_CAP_SECONDS,
+  );
+  const measuredScrollDepth = jobPayload.metrics.scrollDepth ?? 0;
+  const provisionalIsBounce =
+    measuredDurationSeconds < BOUNCE_DURATION_THRESHOLD_SECONDS;
+
+  await SessionModel.updateOne(
+    { sessionId: jobPayload.sessionId },
+    {
+      $max: {
+        maxScrollDepth: measuredScrollDepth,
+        duration: measuredDurationSeconds,
+      },
+      $set: {
+        lastActivityAt: eventTimestamp,
+        isBounce: provisionalIsBounce,
+        ...resolveUserTrackingIdSetField(jobPayload),
+      },
+    },
+  );
+};
+
 export const processBehaviorEventJob = async (
   job: Job<BehaviorEventJobPayload>,
 ): Promise<void> => {
@@ -176,6 +208,9 @@ export const processBehaviorEventJob = async (
       break;
     case "scroll":
       await updateSessionForScroll(jobPayload, eventTimestamp);
+      break;
+    case "time_spent":
+      await updateSessionForTimeSpent(jobPayload, eventTimestamp);
       break;
     case "exit":
       await updateSessionForExit(jobPayload, eventTimestamp);

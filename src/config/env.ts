@@ -136,6 +136,29 @@ const runtimeEnvironmentSchema = z.object({
     .min(1)
     .max(60)
     .default(7),
+  INSIGHTS_PUBLISH_MIN_LINK_CLICKS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(0),
+  INSIGHTS_PUBLISH_CONTENT_DEDUPE_TTL_MS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(86_400_000)
+    .default(0),
+  INSIGHTS_PUBLISH_MIN_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(86_400_000 * 30)
+    .default(0),
+  INSIGHTS_PUBLISH_FORCE_REFRESH_MS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(86_400_000 * 365)
+    .default(0),
   ALERTS_FROM_EMAIL: z
     .string()
     .email("ALERTS_FROM_EMAIL must be a valid email address")

@@ -4,9 +4,17 @@ import {
 } from "../infrastructure/rabbitmq.js";
 import { InsightJobModel } from "../api/models/insightJob.model.js";
 import {
+  evaluateInsightPublishPolicy,
+  upsertInsightPublishCursor,
+} from "./insightPublishPolicy.service.js";
+import {
   buildUserAnalyticsSnapshot,
   findActiveUserIdsForDate,
 } from "./insightsSnapshot.service.js";
+import {
+  computeAnalyticsSnapshotContentHash,
+  sumLinkMetricsClicks,
+} from "../utils/snapshotCanonicalHash.js";
 import { randomUUID } from "node:crypto";
 
 const SNAPSHOT_WINDOW_DAYS_DEFAULT = 7;
@@ -42,6 +50,25 @@ export const publishUserAnalyticsSnapshot = async (
     return;
   }
 
+  const contentHash = computeAnalyticsSnapshotContentHash(snapshotPayload);
+  const totalLinkClicks = sumLinkMetricsClicks(snapshotPayload);
+  const policyDecision = await evaluateInsightPublishPolicy({
+    userId,
+    contentHash,
+    totalLinkClicks,
+  });
+
+  if (!policyDecision.shouldPublish) {
+    console.info("[insightsPublisher] publish skipped by policy", {
+      userId,
+      asOfDateIso,
+      reason: policyDecision.reason,
+      contentHash,
+      totalLinkClicks,
+    });
+    return;
+  }
+
   const insightJobId = randomUUID();
   const publishStartedAtMs = Date.now();
 
@@ -62,6 +89,13 @@ export const publishUserAnalyticsSnapshot = async (
       },
       { messageId: insightJobId },
     );
+
+    await upsertInsightPublishCursor({
+      userId,
+      contentHash,
+      totalLinkClicks,
+      publishedAt: new Date(),
+    });
   } catch (publishError) {
     await InsightJobModel.updateOne(
       { jobId: insightJobId },

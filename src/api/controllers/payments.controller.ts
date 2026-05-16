@@ -113,7 +113,6 @@ export const createSubscriptionForCurrentUser = async (
   const createdSubscription = await createProSubscription({
     planId,
     totalCount: PRO_BILLING_TOTAL_COUNT,
-    customerId: customerSummary.id,
     startAtUnix: firstMonthFreePromo.startAtUnix ?? undefined,
     notes: {
       internalUserId: userDocument._id.toString(),

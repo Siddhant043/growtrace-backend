@@ -113,7 +113,12 @@ const runtimeEnvironmentSchema = z.object({
     .default(0.8),
   ALERTS_TRAFFIC_SPIKE_MULTIPLIER: z.coerce.number().min(1).default(1.5),
   ALERTS_DEDUP_WINDOW_HOURS: z.coerce.number().int().min(1).max(168).default(6),
-  ALERTS_NEW_USER_GRACE_DAYS: z.coerce.number().int().min(0).max(365).default(3),
+  ALERTS_NEW_USER_GRACE_DAYS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(365)
+    .default(3),
   ALERTS_MIN_SESSIONS_FOR_SIGNAL: z.coerce
     .number()
     .int()
@@ -139,11 +144,7 @@ const runtimeEnvironmentSchema = z.object({
     .max(60)
     .default(7),
   INSIGHTS_PUBLISH_CRON: z.string().min(1).default("0 * * * *"),
-  INSIGHTS_PUBLISH_MIN_LINK_CLICKS: z.coerce
-    .number()
-    .int()
-    .min(0)
-    .default(0),
+  INSIGHTS_PUBLISH_MIN_LINK_CLICKS: z.coerce.number().int().min(0).default(0),
   INSIGHTS_PUBLISH_CONTENT_DEDUPE_TTL_MS: z.coerce
     .number()
     .int()
@@ -174,7 +175,9 @@ const runtimeEnvironmentSchema = z.object({
   RAZORPAY_PRO_MONTHLY_PLAN_ID: z
     .string()
     .min(1, "RAZORPAY_PRO_MONTHLY_PLAN_ID is required"),
-  RAZORPAY_PRO_YEARLY_PLAN_ID: z.string().min(1).optional(),
+  RAZORPAY_PRO_YEARLY_PLAN_ID: z
+    .string()
+    .min(1, "RAZORPAY_PRO_YEARLY_PLAN_ID is required"),
   BILLING_GRACE_PERIOD_HOURS: z.coerce
     .number()
     .int()
@@ -185,12 +188,7 @@ const runtimeEnvironmentSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((value) => value === "true"),
-  PRO_FIRST_MONTH_FREE_DAYS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(90)
-    .default(30),
+  PRO_FIRST_MONTH_FREE_DAYS: z.coerce.number().int().min(1).max(90).default(30),
   BULL_BOARD_USERNAME: z.string().min(1, "BULL_BOARD_USERNAME is required"),
   BULL_BOARD_PASSWORD: z.string().min(1, "BULL_BOARD_PASSWORD is required"),
 });

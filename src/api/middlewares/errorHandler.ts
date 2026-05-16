@@ -7,6 +7,24 @@ type ErrorWithStatusCode = Error & {
   details?: Record<string, unknown>
 }
 
+const resolveErrorMessage = (error: ErrorWithStatusCode): string => {
+  if (typeof error.message === "string" && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  const razorpayDescription = (
+    error as ErrorWithStatusCode & {
+      error?: { description?: string };
+    }
+  ).error?.description;
+
+  if (typeof razorpayDescription === "string" && razorpayDescription.trim()) {
+    return razorpayDescription;
+  }
+
+  return "Request failed";
+};
+
 export const errorHandler = (
   error: ErrorWithStatusCode,
   request: Request,
@@ -15,12 +33,13 @@ export const errorHandler = (
 ): void => {
   const statusCode = error.statusCode ?? 500
   const isServerError = statusCode >= 500
+  const resolvedMessage = resolveErrorMessage(error)
 
   void captureSystemError({
     source: 'api',
     service: 'express-api',
     severity: statusCode >= 500 ? 'high' : 'medium',
-    message: error.message || 'Unknown API error',
+    message: resolvedMessage,
     stack: error.stack ?? null,
     metadata: {
       method: request.method,
@@ -38,7 +57,7 @@ export const errorHandler = (
     details?: Record<string, unknown>
   } = {
     success: false,
-    message: isServerError ? 'Internal server error' : error.message,
+    message: isServerError ? 'Internal server error' : resolvedMessage,
   }
 
   if (!isServerError && error.code) {

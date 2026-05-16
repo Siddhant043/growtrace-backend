@@ -3,6 +3,9 @@ import type { Types } from "mongoose";
 
 import { env } from "../config/env.js";
 import { UserModel } from "../api/models/user.model.js";
+import { mapRazorpayFailureToApiError } from "./razorpayError.utils.js";
+
+const SUBSCRIPTION_AUTH_EXPIRE_WINDOW_SECONDS = 7 * 24 * 60 * 60;
 
 let razorpaySingleton: Razorpay | null = null;
 
@@ -85,7 +88,6 @@ export const getOrCreateRazorpayCustomer = async (
 export type CreateProSubscriptionInput = {
   planId: string;
   totalCount: number;
-  customerId?: string;
   startAtUnix?: number;
   customerNotify?: 0 | 1;
   notes?: Record<string, string>;
@@ -116,8 +118,8 @@ export const createProSubscription = async (
     total_count: number;
     customer_notify: 0 | 1;
     notes?: Record<string, string>;
-    customer_id?: string;
     start_at?: number;
+    expire_by?: number;
   } = {
     plan_id: parameters.planId,
     total_count: parameters.totalCount,
@@ -125,16 +127,28 @@ export const createProSubscription = async (
     notes: parameters.notes,
   };
 
-  if (parameters.customerId) {
-    subscriptionCreatePayload.customer_id = parameters.customerId;
-  }
   if (parameters.startAtUnix !== undefined) {
     subscriptionCreatePayload.start_at = parameters.startAtUnix;
+    const nowUnix = Math.floor(Date.now() / 1000);
+    const authorizationExpireByUnix =
+      nowUnix + SUBSCRIPTION_AUTH_EXPIRE_WINDOW_SECONDS;
+    subscriptionCreatePayload.expire_by = Math.max(
+      nowUnix + 60 * 60,
+      Math.min(authorizationExpireByUnix, parameters.startAtUnix - 60),
+    );
   }
 
-  const createdSubscription = await razorpayClient.subscriptions.create(
-    subscriptionCreatePayload,
-  );
+  let createdSubscription;
+  try {
+    createdSubscription = await razorpayClient.subscriptions.create(
+      subscriptionCreatePayload,
+    );
+  } catch (thrownValue) {
+    throw mapRazorpayFailureToApiError(
+      thrownValue,
+      "Unable to create Razorpay subscription",
+    );
+  }
 
   return {
     id: createdSubscription.id,

@@ -7,6 +7,10 @@ import {
   createProSubscription,
   getOrCreateRazorpayCustomer,
 } from "../../infrastructure/razorpay.js";
+import {
+  FIRST_MONTH_FREE_PROMO_TYPE,
+  resolveFirstMonthFreePromoForCheckout,
+} from "../../services/firstMonthFreePromo.service.js";
 import { SubscriptionModel } from "../models/subscription.model.js";
 import { UserModel } from "../models/user.model.js";
 import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
@@ -102,15 +106,27 @@ export const createSubscriptionForCurrentUser = async (
   });
 
   const planId = resolvePlanIdForTier(planTier as SubscriptionPlanTier);
+  const firstMonthFreePromo = await resolveFirstMonthFreePromoForCheckout(
+    userDocument._id.toString(),
+  );
 
   const createdSubscription = await createProSubscription({
     planId,
     totalCount: PRO_BILLING_TOTAL_COUNT,
+    customerId: customerSummary.id,
+    startAtUnix: firstMonthFreePromo.startAtUnix ?? undefined,
     notes: {
       internalUserId: userDocument._id.toString(),
       planTier,
+      ...(firstMonthFreePromo.applyPromo
+        ? { promo: FIRST_MONTH_FREE_PROMO_TYPE }
+        : {}),
     },
   });
+
+  const resolvedTrialEndsAt =
+    fromUnixSeconds(createdSubscription.startAt) ??
+    firstMonthFreePromo.trialEndsAt;
 
   await SubscriptionModel.create({
     userId: userDocument._id,
@@ -128,6 +144,12 @@ export const createSubscriptionForCurrentUser = async (
     paidCount: createdSubscription.paidCount,
     totalCount: createdSubscription.totalCount,
     shortUrl: createdSubscription.shortUrl,
+    promoType: firstMonthFreePromo.applyPromo
+      ? FIRST_MONTH_FREE_PROMO_TYPE
+      : null,
+    promoTrialEndsAt: firstMonthFreePromo.applyPromo
+      ? resolvedTrialEndsAt
+      : null,
   });
 
   await UserModel.updateOne(
@@ -150,6 +172,12 @@ export const createSubscriptionForCurrentUser = async (
       prefill: {
         name: userDocument.fullName,
         email: userDocument.email,
+      },
+      promo: {
+        firstMonthFreeApplied: firstMonthFreePromo.applyPromo,
+        trialEndsAt: firstMonthFreePromo.applyPromo
+          ? (resolvedTrialEndsAt?.toISOString() ?? null)
+          : null,
       },
     },
   });

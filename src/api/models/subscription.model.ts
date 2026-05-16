@@ -11,6 +11,9 @@ export const SUBSCRIPTION_BILLING_INTERVALS = ["monthly", "yearly"] as const;
 export type SubscriptionBillingInterval =
   (typeof SUBSCRIPTION_BILLING_INTERVALS)[number];
 
+export const SUBSCRIPTION_PROMO_TYPES = ["first_month_free"] as const;
+export type SubscriptionPromoType = (typeof SUBSCRIPTION_PROMO_TYPES)[number];
+
 const subscriptionSchema = new Schema(
   {
     userId: {
@@ -105,6 +108,15 @@ const subscriptionSchema = new Schema(
     },
     notes: {
       type: Schema.Types.Mixed,
+      default: null,
+    },
+    promoType: {
+      type: String,
+      enum: SUBSCRIPTION_PROMO_TYPES,
+      default: null,
+    },
+    promoTrialEndsAt: {
+      type: Date,
       default: null,
     },
   },

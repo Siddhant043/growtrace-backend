@@ -14,6 +14,7 @@ import {
   getPlanFeatures,
   type PlanFeature,
 } from "./plan/planFeatures.js";
+import { isEligibleForFirstMonthFree } from "./firstMonthFreePromo.service.js";
 
 export type EffectivePlanInfo = {
   plan: SubscriptionType;
@@ -23,6 +24,8 @@ export type EffectivePlanInfo = {
   cancelAtCycleEnd: boolean;
   lifetime: boolean;
   manage: { shortUrl: string } | null;
+  firstMonthFreeEligible: boolean;
+  firstMonthFreeTrialEndsAt: Date | null;
 };
 
 const PRO_ACTIVE_GRACE_STATUSES: ReadonlyArray<SubscriptionStatus> = [
@@ -85,6 +88,8 @@ export const getEffectivePlanForUser = async (
       cancelAtCycleEnd: false,
       lifetime: false,
       manage: null,
+      firstMonthFreeEligible: false,
+      firstMonthFreeTrialEndsAt: null,
     };
   }
 
@@ -98,6 +103,8 @@ export const getEffectivePlanForUser = async (
       cancelAtCycleEnd: false,
       lifetime: true,
       manage: null,
+      firstMonthFreeEligible: false,
+      firstMonthFreeTrialEndsAt: null,
     };
   }
 
@@ -139,6 +146,15 @@ export const getEffectivePlanForUser = async (
       ? { shortUrl: activeSubscription.shortUrl }
       : null;
 
+  const firstMonthFreeEligible = await isEligibleForFirstMonthFree(userId);
+  const firstMonthFreeTrialEndsAt =
+    activeSubscription?.promoType === "first_month_free"
+      ? (activeSubscription.promoTrialEndsAt ??
+        activeSubscription.chargeAt ??
+        activeSubscription.startAt ??
+        null)
+      : null;
+
   return {
     plan: resolvedPlan,
     status: persistedStatus,
@@ -147,5 +163,7 @@ export const getEffectivePlanForUser = async (
     cancelAtCycleEnd: activeSubscription?.cancelAtCycleEnd === true,
     lifetime: false,
     manage,
+    firstMonthFreeEligible,
+    firstMonthFreeTrialEndsAt,
   };
 };

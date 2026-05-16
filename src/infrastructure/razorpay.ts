@@ -85,6 +85,8 @@ export const getOrCreateRazorpayCustomer = async (
 export type CreateProSubscriptionInput = {
   planId: string;
   totalCount: number;
+  customerId?: string;
+  startAtUnix?: number;
   customerNotify?: 0 | 1;
   notes?: Record<string, string>;
 };
@@ -109,12 +111,30 @@ export const createProSubscription = async (
 ): Promise<CreateProSubscriptionResult> => {
   const razorpayClient = getRazorpayClient();
 
-  const createdSubscription = await razorpayClient.subscriptions.create({
+  const subscriptionCreatePayload: {
+    plan_id: string;
+    total_count: number;
+    customer_notify: 0 | 1;
+    notes?: Record<string, string>;
+    customer_id?: string;
+    start_at?: number;
+  } = {
     plan_id: parameters.planId,
     total_count: parameters.totalCount,
     customer_notify: parameters.customerNotify ?? 1,
     notes: parameters.notes,
-  });
+  };
+
+  if (parameters.customerId) {
+    subscriptionCreatePayload.customer_id = parameters.customerId;
+  }
+  if (parameters.startAtUnix !== undefined) {
+    subscriptionCreatePayload.start_at = parameters.startAtUnix;
+  }
+
+  const createdSubscription = await razorpayClient.subscriptions.create(
+    subscriptionCreatePayload,
+  );
 
   return {
     id: createdSubscription.id,

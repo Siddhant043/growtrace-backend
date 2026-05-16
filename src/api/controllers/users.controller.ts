@@ -116,6 +116,9 @@ export const getCurrentUserPlan = async (
       cancelAtCycleEnd: planInfo.cancelAtCycleEnd,
       lifetime: planInfo.lifetime,
       manage: planInfo.manage,
+      firstMonthFreeEligible: planInfo.firstMonthFreeEligible,
+      firstMonthFreeTrialEndsAt:
+        planInfo.firstMonthFreeTrialEndsAt?.toISOString() ?? null,
     },
   })
 }

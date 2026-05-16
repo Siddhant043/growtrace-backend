@@ -181,6 +181,16 @@ const runtimeEnvironmentSchema = z.object({
     .min(0)
     .max(168)
     .default(24),
+  PRO_FIRST_MONTH_FREE_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+  PRO_FIRST_MONTH_FREE_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(90)
+    .default(30),
   BULL_BOARD_USERNAME: z.string().min(1, "BULL_BOARD_USERNAME is required"),
   BULL_BOARD_PASSWORD: z.string().min(1, "BULL_BOARD_PASSWORD is required"),
 });

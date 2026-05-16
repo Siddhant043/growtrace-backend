@@ -71,7 +71,8 @@ export const getOrCreateRazorpayCustomer = async (
       name: user.fullName,
       email: user.email,
       contact: sanitizeContactNumber(user.contact ?? null),
-      fail_existing: 1,
+      // 0 = return existing customer for same email/contact; 1 = throw "already exists"
+      fail_existing: 0,
       notes: { internalUserId: user._id.toString() },
     });
   } catch (thrownValue) {

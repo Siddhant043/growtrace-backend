@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import { env } from "../config/env.js";
 import {
   SubscriptionModel,
+  type SubscriptionBillingInterval,
   type SubscriptionDocument,
 } from "../api/models/subscription.model.js";
 import {
@@ -26,6 +27,7 @@ export type EffectivePlanInfo = {
   manage: { shortUrl: string } | null;
   firstMonthFreeEligible: boolean;
   firstMonthFreeTrialEndsAt: Date | null;
+  billingInterval: SubscriptionBillingInterval | null;
 };
 
 const PRO_ACTIVE_GRACE_STATUSES: ReadonlyArray<SubscriptionStatus> = [
@@ -90,6 +92,7 @@ export const getEffectivePlanForUser = async (
       manage: null,
       firstMonthFreeEligible: false,
       firstMonthFreeTrialEndsAt: null,
+      billingInterval: null,
     };
   }
 
@@ -105,6 +108,7 @@ export const getEffectivePlanForUser = async (
       manage: null,
       firstMonthFreeEligible: false,
       firstMonthFreeTrialEndsAt: null,
+      billingInterval: null,
     };
   }
 
@@ -165,5 +169,6 @@ export const getEffectivePlanForUser = async (
     manage,
     firstMonthFreeEligible,
     firstMonthFreeTrialEndsAt,
+    billingInterval: activeSubscription?.billingInterval ?? null,
   };
 };

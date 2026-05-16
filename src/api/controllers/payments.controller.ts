@@ -45,7 +45,10 @@ const createApiError = (
   return apiError;
 };
 
-const PRO_BILLING_TOTAL_COUNT = 12;
+const PRO_BILLING_TOTAL_COUNT_BY_TIER: Record<SubscriptionPlanTier, number> = {
+  monthly: 12,
+  yearly: 1,
+};
 
 const ACTIVE_SUBSCRIPTION_STATUSES = [
   "authenticated",
@@ -63,10 +66,16 @@ const resolvePlanIdForTier = (planTier: SubscriptionPlanTier): string => {
   if (planTier === "monthly") {
     return env.RAZORPAY_PRO_MONTHLY_PLAN_ID;
   }
+  if (planTier === "yearly") {
+    return env.RAZORPAY_PRO_YEARLY_PLAN_ID;
+  }
   throw createApiError("Unsupported plan tier", 400, {
     code: "UNSUPPORTED_PLAN_TIER",
   });
 };
+
+const resolveTotalCountForTier = (planTier: SubscriptionPlanTier): number =>
+  PRO_BILLING_TOTAL_COUNT_BY_TIER[planTier];
 
 const fromUnixSeconds = (unixSeconds: number | null): Date | null =>
   unixSeconds === null ? null : new Date(unixSeconds * 1000);
@@ -205,7 +214,7 @@ export const createSubscriptionForCurrentUser = async (
 
   const createdSubscription = await createProSubscription({
     planId,
-    totalCount: PRO_BILLING_TOTAL_COUNT,
+    totalCount: resolveTotalCountForTier(planTier as SubscriptionPlanTier),
     startAtUnix: firstMonthFreePromo.startAtUnix ?? undefined,
     notes: {
       internalUserId: userDocument._id.toString(),

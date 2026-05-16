@@ -119,6 +119,7 @@ export const getCurrentUserPlan = async (
       firstMonthFreeEligible: planInfo.firstMonthFreeEligible,
       firstMonthFreeTrialEndsAt:
         planInfo.firstMonthFreeTrialEndsAt?.toISOString() ?? null,
+      billingInterval: planInfo.billingInterval,
     },
   })
 }

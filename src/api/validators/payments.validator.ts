@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SUBSCRIPTION_PLAN_TIERS = ["monthly"] as const;
+export const SUBSCRIPTION_PLAN_TIERS = ["monthly", "yearly"] as const;
 export type SubscriptionPlanTier = (typeof SUBSCRIPTION_PLAN_TIERS)[number];
 
 export const createSubscriptionRequestSchema = z.object({

@@ -166,7 +166,7 @@ export const updateLinkByShortCode = async (
   const updatedLink = await LinkModel.findOneAndUpdate(
     { shortCode: shortCode.trim(), userId },
     { $set: updateOperations },
-    { new: true },
+    { returnDocument: "after" },
   ).lean();
 
   if (!updatedLink) {

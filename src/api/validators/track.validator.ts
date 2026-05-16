@@ -35,7 +35,7 @@ const trackEventBodySchema = z.object({
   linkId: z
     .string()
     .trim()
-    .max(64)
+    .max(256)
     .optional()
     .nullable()
     .transform((linkIdValue) =>

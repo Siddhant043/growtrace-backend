@@ -272,7 +272,7 @@ const applySubscriptionUpdateAtomically = async (
         lastEventAt: eventInput.occurredAt,
       },
     },
-    { new: true },
+    { returnDocument: "after" },
   );
 };
 

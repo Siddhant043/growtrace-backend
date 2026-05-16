@@ -421,7 +421,7 @@ const persistWeeklyReportDocument = async (
       $set: setFields,
       $setOnInsert: setOnInsertFields,
     },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   ).exec();
 
   if (!upserted) {
@@ -477,7 +477,7 @@ const buildSkippedDeliverySummary = async (
       },
       $setOnInsert: { topPlatform: {}, topContent: {}, trends: [] },
     },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   ).exec();
 
   if (!upserted) {

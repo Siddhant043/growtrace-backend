@@ -86,6 +86,6 @@ export const upsertInsightPublishCursor = async (input: {
         lastTotalLinkClicks: input.totalLinkClicks,
       },
     },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
 };

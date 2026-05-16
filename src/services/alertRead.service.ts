@@ -148,7 +148,7 @@ export const markAlertAsReadForUser = async (
       userId: new Types.ObjectId(userId),
     },
     { $set: { isRead: true } },
-    { new: true },
+    { returnDocument: "after" },
   ).lean<AlertDocument | null>();
 
   if (!updatedAlert) {

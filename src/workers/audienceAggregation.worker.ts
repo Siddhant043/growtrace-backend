@@ -11,9 +11,7 @@ import {
   runAudienceUserAggregationForUser,
 } from "../services/audienceUserAggregation.service.js";
 import { runAudienceCohortAggregationForUser } from "../services/audienceCohortAggregation.service.js";
-import { publishUserAnalyticsSnapshot } from "../services/insightsPublisher.service.js";
 import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
-import { getCurrentUtcDateString } from "../utils/dateBounds.utils.js";
 
 interface AudienceAggregationRunSummary {
   attemptedUserCount: number;
@@ -36,25 +34,6 @@ const aggregateAudienceForSingleUser = async (
     await runAudienceCohortAggregationForUser(activeUserId);
 
   return { usersAggregatedRowsUpserted, cohortRowsUpserted };
-};
-
-const fireAndForgetSnapshotPublishForUser = async (
-  activeUserId: string,
-): Promise<void> => {
-  try {
-    await publishUserAnalyticsSnapshot(activeUserId, getCurrentUtcDateString());
-  } catch (snapshotPublishError) {
-    console.error(
-      "[audienceAggregation.worker] snapshot publish failed (non-fatal)",
-      {
-        userId: activeUserId,
-        error:
-          snapshotPublishError instanceof Error
-            ? snapshotPublishError.message
-            : String(snapshotPublishError),
-      },
-    );
-  }
 };
 
 const fireAndForgetAlertDetectionEnqueueForUser = async (
@@ -96,7 +75,6 @@ export const processAudienceAggregationJob = async (
       totalCohortRowsUpserted += cohortRowsUpserted;
       succeededUserCount += 1;
 
-      void fireAndForgetSnapshotPublishForUser(activeUserId);
       void fireAndForgetAlertDetectionEnqueueForUser(activeUserId);
     } catch (perUserError) {
       failedUserCount += 1;

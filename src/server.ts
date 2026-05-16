@@ -27,6 +27,7 @@ import {
   scheduleRecurringAlertsDetection,
   scheduleRecurringAudienceAggregation,
   scheduleRecurringFunnelAggregation,
+  scheduleRecurringInsightsPublish,
   scheduleRecurringMetricsAggregation,
   scheduleRecurringWeeklyReportsProducer,
 } from "./infrastructure/queue.js";
@@ -36,6 +37,7 @@ import { startFunnelAggregationWorker } from "./workers/funnelAggregation.worker
 import { startWeeklyReportsWorker } from "./workers/weeklyReports.worker.js";
 import { startAttributionWorker } from "./workers/attribution.worker.js";
 import { startAudienceAggregationWorker } from "./workers/audienceAggregation.worker.js";
+import { startInsightsPublishWorker } from "./workers/insightsPublish.worker.js";
 import { startAlertsDetectionWorker } from "./workers/alertsDetection.worker.js";
 import { startAlertsDispatchWorker } from "./workers/alertsDispatch.worker.js";
 import { startAdminAnalyticsAggregationWorkers } from "./workers/adminAnalyticsAggregation.worker.js";
@@ -256,6 +258,16 @@ const startServer = async (): Promise<void> => {
     `audienceAggregation rollup scheduled (cron='${env.AUDIENCE_AGGREGATION_CRON}', windowDays=${env.AUDIENCE_AGGREGATION_WINDOW_DAYS})`,
   );
 
+  const insightsPublishWorker = startInsightsPublishWorker();
+  console.log(
+    `insightsPublish worker running (env=${env.ENV}, pid=${process.pid})`,
+  );
+
+  await scheduleRecurringInsightsPublish();
+  console.log(
+    `insightsPublish scheduled (cron='${env.INSIGHTS_PUBLISH_CRON}')`,
+  );
+
   const alertsDetectionWorker = startAlertsDetectionWorker();
   console.log(
     `alertsDetection worker running (env=${env.ENV}, pid=${process.pid}, concurrency=${env.ALERTS_DETECTION_WORKER_CONCURRENCY})`,
@@ -308,6 +320,7 @@ const startServer = async (): Promise<void> => {
         weeklyReportsWorker.close(),
         attributionWorker.close(),
         audienceAggregationWorker.close(),
+        insightsPublishWorker.close(),
         alertsDetectionWorker.close(),
         alertsDispatchWorker.close(),
         adminPlatformMetricsAggregationWorker.close(),

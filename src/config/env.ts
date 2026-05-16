@@ -136,6 +136,7 @@ const runtimeEnvironmentSchema = z.object({
     .min(1)
     .max(60)
     .default(7),
+  INSIGHTS_PUBLISH_CRON: z.string().min(1).default("0 * * * *"),
   INSIGHTS_PUBLISH_MIN_LINK_CLICKS: z.coerce
     .number()
     .int()

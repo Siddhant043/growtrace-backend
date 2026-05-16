@@ -9,6 +9,7 @@ export const FUNNEL_AGGREGATION_QUEUE_NAME = "funnelAggregation";
 export const WEEKLY_REPORTS_QUEUE_NAME = "weekly-reports";
 export const ATTRIBUTION_QUEUE_NAME = "attribution";
 export const ATTRIBUTION_TOUCHPOINT_JOB_NAME = "ingest-touchpoint";
+export const INSIGHTS_PUBLISH_QUEUE_NAME = "insightsPublish";
 export const AUDIENCE_AGGREGATION_QUEUE_NAME = "audienceAggregation";
 export const ALERTS_DETECTION_QUEUE_NAME = "alertsDetection";
 export const ALERTS_DISPATCH_QUEUE_NAME = "alertsDispatch";
@@ -640,6 +641,72 @@ export const scheduleRecurringAudienceAggregation = async (
       name: AUDIENCE_AGGREGATION_SCHEDULER_IDS.rollup,
       data: {
         schedulerId: AUDIENCE_AGGREGATION_SCHEDULER_IDS.rollup,
+      },
+    },
+  );
+};
+
+export const INSIGHTS_PUBLISH_SCHEDULER_IDS = {
+  hourly: "insights-publish:hourly",
+} as const;
+
+export type InsightsPublishSchedulerId =
+  (typeof INSIGHTS_PUBLISH_SCHEDULER_IDS)[keyof typeof INSIGHTS_PUBLISH_SCHEDULER_IDS];
+
+export interface InsightsPublishJobPayload {
+  schedulerId: InsightsPublishSchedulerId;
+}
+
+let cachedInsightsPublishQueue: Queue<InsightsPublishJobPayload> | null = null;
+
+export const getInsightsPublishQueue = (): Queue<InsightsPublishJobPayload> => {
+  if (cachedInsightsPublishQueue) {
+    return cachedInsightsPublishQueue;
+  }
+
+  cachedInsightsPublishQueue = new Queue<InsightsPublishJobPayload>(
+    INSIGHTS_PUBLISH_QUEUE_NAME,
+    {
+      connection: getBullmqRedisConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 1000 },
+        removeOnComplete: { age: 3600, count: 200 },
+        removeOnFail: { age: 86400 },
+      },
+    },
+  );
+
+  return cachedInsightsPublishQueue;
+};
+
+export const createInsightsPublishWorker = (
+  processor: Processor<InsightsPublishJobPayload>,
+  workerOptions: Omit<WorkerOptions, "connection"> = {},
+): Worker<InsightsPublishJobPayload> => {
+  return new Worker<InsightsPublishJobPayload>(
+    INSIGHTS_PUBLISH_QUEUE_NAME,
+    processor,
+    {
+      connection: getBullmqRedisConnection(),
+      concurrency: workerOptions.concurrency ?? 1,
+      ...workerOptions,
+    },
+  );
+};
+
+export const scheduleRecurringInsightsPublish = async (
+  cronPattern: string = env.INSIGHTS_PUBLISH_CRON,
+): Promise<void> => {
+  const insightsPublishQueue = getInsightsPublishQueue();
+
+  await insightsPublishQueue.upsertJobScheduler(
+    INSIGHTS_PUBLISH_SCHEDULER_IDS.hourly,
+    { pattern: cronPattern },
+    {
+      name: INSIGHTS_PUBLISH_SCHEDULER_IDS.hourly,
+      data: {
+        schedulerId: INSIGHTS_PUBLISH_SCHEDULER_IDS.hourly,
       },
     },
   );

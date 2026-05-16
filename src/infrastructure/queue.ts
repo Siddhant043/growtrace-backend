@@ -189,15 +189,15 @@ export const createMetricsAggregationWorker = (
   );
 };
 
-const METRICS_AGGREGATION_RECURRING_PATTERN = "*/5 * * * *";
-
-export const scheduleRecurringMetricsAggregation = async (): Promise<void> => {
+export const scheduleRecurringMetricsAggregation = async (
+  cronPattern: string = env.METRICS_AGGREGATION_CRON,
+): Promise<void> => {
   const metricsQueue = getMetricsAggregationQueue();
 
   await Promise.all([
     metricsQueue.upsertJobScheduler(
       METRICS_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
-      { pattern: METRICS_AGGREGATION_RECURRING_PATTERN },
+      { pattern: cronPattern },
       {
         name: METRICS_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
         data: {
@@ -207,7 +207,7 @@ export const scheduleRecurringMetricsAggregation = async (): Promise<void> => {
     ),
     metricsQueue.upsertJobScheduler(
       METRICS_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
-      { pattern: METRICS_AGGREGATION_RECURRING_PATTERN },
+      { pattern: cronPattern },
       {
         name: METRICS_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
         data: {
@@ -257,8 +257,6 @@ export const createFunnelAggregationWorker = (
     },
   );
 };
-
-const FUNNEL_AGGREGATION_RECURRING_PATTERN = "*/5 * * * *";
 
 export interface WeeklyReportsProducerJobPayload {
   reason: "cron" | "manual";
@@ -331,13 +329,15 @@ export const scheduleRecurringWeeklyReportsProducer = async (
   );
 };
 
-export const scheduleRecurringFunnelAggregation = async (): Promise<void> => {
+export const scheduleRecurringFunnelAggregation = async (
+  cronPattern: string = env.FUNNEL_AGGREGATION_CRON,
+): Promise<void> => {
   const funnelQueue = getFunnelAggregationQueue();
 
   await Promise.all([
     funnelQueue.upsertJobScheduler(
       FUNNEL_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
-      { pattern: FUNNEL_AGGREGATION_RECURRING_PATTERN },
+      { pattern: cronPattern },
       {
         name: FUNNEL_AGGREGATION_SCHEDULER_IDS.currentUtcDay,
         data: {
@@ -347,7 +347,7 @@ export const scheduleRecurringFunnelAggregation = async (): Promise<void> => {
     ),
     funnelQueue.upsertJobScheduler(
       FUNNEL_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
-      { pattern: FUNNEL_AGGREGATION_RECURRING_PATTERN },
+      { pattern: cronPattern },
       {
         name: FUNNEL_AGGREGATION_SCHEDULER_IDS.previousUtcDay,
         data: {

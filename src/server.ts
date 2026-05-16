@@ -216,7 +216,7 @@ const startServer = async (): Promise<void> => {
 
   await scheduleRecurringMetricsAggregation();
   console.log(
-    "metricsAggregation jobs scheduled (every 5m, current+previous UTC day)",
+    `metricsAggregation jobs scheduled (cron='${env.METRICS_AGGREGATION_CRON}', current+previous UTC day)`,
   );
 
   const funnelAggregationWorker = startFunnelAggregationWorker();
@@ -226,7 +226,7 @@ const startServer = async (): Promise<void> => {
 
   await scheduleRecurringFunnelAggregation();
   console.log(
-    "funnelAggregation jobs scheduled (every 5m, current+previous UTC day)",
+    `funnelAggregation jobs scheduled (cron='${env.FUNNEL_AGGREGATION_CRON}', current+previous UTC day)`,
   );
 
   const weeklyReportsWorker = startWeeklyReportsWorker();

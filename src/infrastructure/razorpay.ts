@@ -65,13 +65,21 @@ export const getOrCreateRazorpayCustomer = async (
     };
   }
 
-  const createdCustomer = await razorpayClient.customers.create({
-    name: user.fullName,
-    email: user.email,
-    contact: sanitizeContactNumber(user.contact ?? null),
-    fail_existing: 0,
-    notes: { internalUserId: user._id.toString() },
-  });
+  let createdCustomer;
+  try {
+    createdCustomer = await razorpayClient.customers.create({
+      name: user.fullName,
+      email: user.email,
+      contact: sanitizeContactNumber(user.contact ?? null),
+      fail_existing: 1,
+      notes: { internalUserId: user._id.toString() },
+    });
+  } catch (thrownValue) {
+    throw mapRazorpayFailureToApiError(
+      thrownValue,
+      "Unable to create Razorpay customer",
+    );
+  }
 
   await UserModel.updateOne(
     { _id: user._id },

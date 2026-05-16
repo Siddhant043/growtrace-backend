@@ -11,6 +11,10 @@ import {
   FIRST_MONTH_FREE_PROMO_TYPE,
   resolveFirstMonthFreePromoForCheckout,
 } from "../../services/firstMonthFreePromo.service.js";
+import {
+  backfillUserRazorpayCustomerId,
+  findReusablePendingSubscription,
+} from "../../services/subscriptionCheckout.service.js";
 import { SubscriptionModel } from "../models/subscription.model.js";
 import { UserModel } from "../models/user.model.js";
 import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
@@ -45,11 +49,15 @@ const createApiError = (
 const PRO_BILLING_TOTAL_COUNT = 12;
 
 const ACTIVE_SUBSCRIPTION_STATUSES = [
-  // "created",
   "authenticated",
   "active",
   "pending",
   "halted",
+] as const;
+
+const CANCELLABLE_SUBSCRIPTION_STATUSES = [
+  ...ACTIVE_SUBSCRIPTION_STATUSES,
+  "created",
 ] as const;
 
 const resolvePlanIdForTier = (planTier: SubscriptionPlanTier): string => {
@@ -63,6 +71,47 @@ const resolvePlanIdForTier = (planTier: SubscriptionPlanTier): string => {
 
 const fromUnixSeconds = (unixSeconds: number | null): Date | null =>
   unixSeconds === null ? null : new Date(unixSeconds * 1000);
+
+type CreateSubscriptionResponsePayload = {
+  subscriptionId: string;
+  shortUrl: string;
+  keyId: string;
+  status: string;
+  prefill: {
+    name: string;
+    email: string;
+  };
+  promo: {
+    firstMonthFreeApplied: boolean;
+    trialEndsAt: string | null;
+  };
+  reusedPendingCheckout: boolean;
+};
+
+const buildCreateSubscriptionResponse = (parameters: {
+  subscriptionId: string;
+  shortUrl: string;
+  status: string;
+  userFullName: string;
+  userEmail: string;
+  firstMonthFreeApplied: boolean;
+  trialEndsAt: Date | null;
+  reusedPendingCheckout: boolean;
+}): CreateSubscriptionResponsePayload => ({
+  subscriptionId: parameters.subscriptionId,
+  shortUrl: parameters.shortUrl,
+  keyId: env.RAZORPAY_KEY_ID,
+  status: parameters.status,
+  prefill: {
+    name: parameters.userFullName,
+    email: parameters.userEmail,
+  },
+  promo: {
+    firstMonthFreeApplied: parameters.firstMonthFreeApplied,
+    trialEndsAt: parameters.trialEndsAt?.toISOString() ?? null,
+  },
+  reusedPendingCheckout: parameters.reusedPendingCheckout,
+});
 
 export const createSubscriptionForCurrentUser = async (
   request: Request<unknown, unknown, CreateSubscriptionRequestBody>,
@@ -96,16 +145,56 @@ export const createSubscriptionForCurrentUser = async (
     );
   }
 
+  const planId = resolvePlanIdForTier(planTier as SubscriptionPlanTier);
+  const backfilledCustomerId = await backfillUserRazorpayCustomerId(
+    userDocument._id,
+    userDocument.razorpayCustomerId,
+  );
+
   const customerSummary = await getOrCreateRazorpayCustomer({
     user: {
       _id: userDocument._id,
       email: userDocument.email,
       fullName: userDocument.fullName,
-      razorpayCustomerId: userDocument.razorpayCustomerId,
+      razorpayCustomerId: backfilledCustomerId,
     },
   });
 
-  const planId = resolvePlanIdForTier(planTier as SubscriptionPlanTier);
+  const reusablePendingSubscription = await findReusablePendingSubscription(
+    userDocument._id,
+    planId,
+  );
+
+  if (reusablePendingSubscription) {
+    await UserModel.updateOne(
+      { _id: userDocument._id },
+      {
+        $set: {
+          razorpayCustomerId: customerSummary.id,
+          razorpaySubscriptionId:
+            reusablePendingSubscription.razorpaySubscriptionId,
+          subscriptionStatus: reusablePendingSubscription.status,
+        },
+      },
+    );
+
+    response.status(201).json({
+      success: true,
+      data: buildCreateSubscriptionResponse({
+        subscriptionId: reusablePendingSubscription.razorpaySubscriptionId,
+        shortUrl: reusablePendingSubscription.shortUrl as string,
+        status: reusablePendingSubscription.status,
+        userFullName: userDocument.fullName,
+        userEmail: userDocument.email,
+        firstMonthFreeApplied:
+          reusablePendingSubscription.promoType === FIRST_MONTH_FREE_PROMO_TYPE,
+        trialEndsAt: reusablePendingSubscription.promoTrialEndsAt ?? null,
+        reusedPendingCheckout: true,
+      }),
+    });
+    return;
+  }
+
   const firstMonthFreePromo = await resolveFirstMonthFreePromoForCheckout(
     userDocument._id.toString(),
   );
@@ -155,6 +244,7 @@ export const createSubscriptionForCurrentUser = async (
     { _id: userDocument._id },
     {
       $set: {
+        razorpayCustomerId: customerSummary.id,
         razorpaySubscriptionId: createdSubscription.id,
         subscriptionStatus: createdSubscription.status,
       },
@@ -163,22 +253,16 @@ export const createSubscriptionForCurrentUser = async (
 
   response.status(201).json({
     success: true,
-    data: {
+    data: buildCreateSubscriptionResponse({
       subscriptionId: createdSubscription.id,
       shortUrl: createdSubscription.shortUrl,
-      keyId: env.RAZORPAY_KEY_ID,
       status: createdSubscription.status,
-      prefill: {
-        name: userDocument.fullName,
-        email: userDocument.email,
-      },
-      promo: {
-        firstMonthFreeApplied: firstMonthFreePromo.applyPromo,
-        trialEndsAt: firstMonthFreePromo.applyPromo
-          ? (resolvedTrialEndsAt?.toISOString() ?? null)
-          : null,
-      },
-    },
+      userFullName: userDocument.fullName,
+      userEmail: userDocument.email,
+      firstMonthFreeApplied: firstMonthFreePromo.applyPromo,
+      trialEndsAt: firstMonthFreePromo.applyPromo ? resolvedTrialEndsAt : null,
+      reusedPendingCheckout: false,
+    }),
   });
 };
 
@@ -190,37 +274,55 @@ export const cancelSubscriptionForCurrentUser = async (
   const userId = authenticatedRequest.authenticatedUser.id;
   const { cancelAtCycleEnd } = request.body;
 
-  const activeSubscription = await SubscriptionModel.findOne({
+  const subscriptionToCancel = await SubscriptionModel.findOne({
     userId: new Types.ObjectId(userId),
-    status: { $in: ACTIVE_SUBSCRIPTION_STATUSES },
-  });
+    status: { $in: CANCELLABLE_SUBSCRIPTION_STATUSES },
+  }).sort({ createdAt: -1 });
 
-  if (!activeSubscription) {
+  if (!subscriptionToCancel) {
     throw createApiError("No active subscription found", 404, {
       code: "NO_ACTIVE_SUBSCRIPTION",
     });
   }
 
+  const isPendingCreatedCheckout = subscriptionToCancel.status === "created";
+  const shouldCancelAtCycleEnd = isPendingCreatedCheckout
+    ? false
+    : (cancelAtCycleEnd ?? true);
+
   await cancelRazorpaySubscription(
-    activeSubscription.razorpaySubscriptionId,
-    cancelAtCycleEnd ?? true,
+    subscriptionToCancel.razorpaySubscriptionId,
+    shouldCancelAtCycleEnd,
   );
 
   await SubscriptionModel.updateOne(
-    { _id: activeSubscription._id },
+    { _id: subscriptionToCancel._id },
     {
       $set: {
-        cancelAtCycleEnd: cancelAtCycleEnd ?? true,
+        status: isPendingCreatedCheckout ? "cancelled" : subscriptionToCancel.status,
+        cancelAtCycleEnd: shouldCancelAtCycleEnd,
         cancelledAt: new Date(),
       },
     },
   );
 
+  if (isPendingCreatedCheckout) {
+    await UserModel.updateOne(
+      { _id: new Types.ObjectId(userId) },
+      {
+        $set: {
+          razorpaySubscriptionId: null,
+          subscriptionStatus: null,
+        },
+      },
+    );
+  }
+
   response.status(200).json({
     success: true,
     data: {
-      subscriptionId: activeSubscription.razorpaySubscriptionId,
-      cancelAtCycleEnd: cancelAtCycleEnd ?? true,
+      subscriptionId: subscriptionToCancel.razorpaySubscriptionId,
+      cancelAtCycleEnd: shouldCancelAtCycleEnd,
     },
   });
 };

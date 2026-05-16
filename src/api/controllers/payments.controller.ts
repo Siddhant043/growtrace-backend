@@ -5,14 +5,13 @@ import { env } from "../../config/env.js";
 import {
   cancelRazorpaySubscription,
   createProSubscription,
-  getOrCreateRazorpayCustomer,
 } from "../../infrastructure/razorpay.js";
 import {
   FIRST_MONTH_FREE_PROMO_TYPE,
   resolveFirstMonthFreePromoForCheckout,
 } from "../../services/firstMonthFreePromo.service.js";
 import {
-  backfillUserRazorpayCustomerId,
+  ensureRazorpayCustomerForCheckout,
   findReusablePendingSubscription,
 } from "../../services/subscriptionCheckout.service.js";
 import { SubscriptionModel } from "../models/subscription.model.js";
@@ -146,19 +145,6 @@ export const createSubscriptionForCurrentUser = async (
   }
 
   const planId = resolvePlanIdForTier(planTier as SubscriptionPlanTier);
-  const backfilledCustomerId = await backfillUserRazorpayCustomerId(
-    userDocument._id,
-    userDocument.razorpayCustomerId,
-  );
-
-  const customerSummary = await getOrCreateRazorpayCustomer({
-    user: {
-      _id: userDocument._id,
-      email: userDocument.email,
-      fullName: userDocument.fullName,
-      razorpayCustomerId: backfilledCustomerId,
-    },
-  });
 
   const reusablePendingSubscription = await findReusablePendingSubscription(
     userDocument._id,
@@ -166,6 +152,16 @@ export const createSubscriptionForCurrentUser = async (
   );
 
   if (reusablePendingSubscription) {
+    const customerSummary = await ensureRazorpayCustomerForCheckout({
+      _id: userDocument._id,
+      email: userDocument.email,
+      fullName: userDocument.fullName,
+      razorpayCustomerId:
+        userDocument.razorpayCustomerId ??
+        reusablePendingSubscription.razorpayCustomerId,
+      razorpaySubscriptionId: reusablePendingSubscription.razorpaySubscriptionId,
+    });
+
     await UserModel.updateOne(
       { _id: userDocument._id },
       {
@@ -195,6 +191,14 @@ export const createSubscriptionForCurrentUser = async (
     return;
   }
 
+  const customerSummary = await ensureRazorpayCustomerForCheckout({
+    _id: userDocument._id,
+    email: userDocument.email,
+    fullName: userDocument.fullName,
+    razorpayCustomerId: userDocument.razorpayCustomerId,
+    razorpaySubscriptionId: userDocument.razorpaySubscriptionId,
+  });
+
   const firstMonthFreePromo = await resolveFirstMonthFreePromoForCheckout(
     userDocument._id.toString(),
   );
@@ -216,6 +220,9 @@ export const createSubscriptionForCurrentUser = async (
     fromUnixSeconds(createdSubscription.startAt) ??
     firstMonthFreePromo.trialEndsAt;
 
+  const resolvedRazorpayCustomerId =
+    createdSubscription.customerId ?? customerSummary.id;
+
   await SubscriptionModel.create({
     userId: userDocument._id,
     plan: "pro",
@@ -223,7 +230,7 @@ export const createSubscriptionForCurrentUser = async (
     status: createdSubscription.status,
     razorpaySubscriptionId: createdSubscription.id,
     razorpayPlanId: createdSubscription.planId,
-    razorpayCustomerId: customerSummary.id,
+    razorpayCustomerId: resolvedRazorpayCustomerId,
     currentStart: fromUnixSeconds(createdSubscription.currentStart),
     currentEnd: fromUnixSeconds(createdSubscription.currentEnd),
     chargeAt: fromUnixSeconds(createdSubscription.chargeAt),
@@ -244,7 +251,7 @@ export const createSubscriptionForCurrentUser = async (
     { _id: userDocument._id },
     {
       $set: {
-        razorpayCustomerId: customerSummary.id,
+        razorpayCustomerId: resolvedRazorpayCustomerId,
         razorpaySubscriptionId: createdSubscription.id,
         subscriptionStatus: createdSubscription.status,
       },

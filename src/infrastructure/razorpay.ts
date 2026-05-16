@@ -7,7 +7,21 @@ import { mapRazorpayFailureToApiError } from "./razorpayError.utils.js";
 
 const SUBSCRIPTION_AUTH_EXPIRE_WINDOW_SECONDS = 7 * 24 * 60 * 60;
 
+const CUSTOMER_LIST_PAGE_SIZE = 100;
+const CUSTOMER_LIST_MAX_PAGES = 3;
+
+/** Razorpay API expects string "0"/"1"; razorpay-node v2.9.x mishandles numeric 0. */
+const RAZORPAY_FAIL_EXISTING_RETURN_EXISTING = "0" as unknown as 0;
+
 let razorpaySingleton: Razorpay | null = null;
+
+export const resetRazorpayClientSingleton = (): void => {
+  razorpaySingleton = null;
+};
+
+export const setRazorpayClientSingletonForTests = (client: Razorpay): void => {
+  razorpaySingleton = client;
+};
 
 export const getRazorpayClient = (): Razorpay => {
   if (razorpaySingleton) {
@@ -35,6 +49,37 @@ const sanitizeContactNumber = (
   return trimmedContact;
 };
 
+export const normalizeEmailForCustomerMatch = (email: string): string =>
+  email.trim().toLowerCase();
+
+const isNonEmptyCustomerId = (
+  customerId: string | null | undefined,
+): customerId is string =>
+  typeof customerId === "string" && customerId.trim().length > 0;
+
+type RazorpayThrownErrorShape = {
+  statusCode?: number;
+  error?: {
+    code?: string;
+    description?: string;
+  };
+};
+
+export const isRazorpayDuplicateCustomerError = (
+  thrownValue: unknown,
+): boolean => {
+  if (typeof thrownValue !== "object" || thrownValue === null) {
+    return false;
+  }
+  const shaped = thrownValue as RazorpayThrownErrorShape;
+  const description = shaped.error?.description?.toLowerCase() ?? "";
+  return (
+    shaped.statusCode === 400 &&
+    shaped.error?.code === "BAD_REQUEST_ERROR" &&
+    description.includes("customer already exists")
+  );
+};
+
 export type RazorpayCustomerSummary = {
   id: string;
   email: string;
@@ -51,47 +96,152 @@ export type GetOrCreateRazorpayCustomerInput = {
   };
 };
 
-export const getOrCreateRazorpayCustomer = async (
-  parameters: GetOrCreateRazorpayCustomerInput,
+const persistRazorpayCustomerIdOnUser = async (
+  userId: Types.ObjectId | string,
+  customerId: string,
+): Promise<void> => {
+  await UserModel.updateOne(
+    { _id: userId },
+    { $set: { razorpayCustomerId: customerId } },
+  );
+};
+
+const mapFetchedCustomerToSummary = (
+  customer: {
+    id: string;
+    email?: string;
+    name?: string;
+  },
+  fallbackEmail: string,
+  fallbackName: string,
+): RazorpayCustomerSummary => ({
+  id: customer.id,
+  email: customer.email ?? fallbackEmail,
+  name: customer.name ?? fallbackName,
+});
+
+export const fetchRazorpayCustomer = async (
+  customerId: string,
 ): Promise<RazorpayCustomerSummary> => {
   const razorpayClient = getRazorpayClient();
-  const { user } = parameters;
-
-  if (user.razorpayCustomerId) {
-    return {
-      id: user.razorpayCustomerId,
-      email: user.email,
-      name: user.fullName,
-    };
-  }
-
-  let createdCustomer;
   try {
-    createdCustomer = await razorpayClient.customers.create({
-      name: user.fullName,
-      email: user.email,
-      contact: sanitizeContactNumber(user.contact ?? null),
-      // 0 = return existing customer for same email/contact; 1 = throw "already exists"
-      fail_existing: 0,
-      notes: { internalUserId: user._id.toString() },
-    });
+    const fetchedCustomer = await razorpayClient.customers.fetch(customerId);
+    return mapFetchedCustomerToSummary(
+      fetchedCustomer,
+      fetchedCustomer.email ?? "",
+      fetchedCustomer.name ?? "",
+    );
   } catch (thrownValue) {
     throw mapRazorpayFailureToApiError(
       thrownValue,
-      "Unable to create Razorpay customer",
+      "Unable to fetch Razorpay customer",
     );
   }
+};
 
-  await UserModel.updateOne(
-    { _id: user._id },
-    { $set: { razorpayCustomerId: createdCustomer.id } },
-  );
+export const findRazorpayCustomerByEmail = async (
+  email: string,
+): Promise<RazorpayCustomerSummary | null> => {
+  const razorpayClient = getRazorpayClient();
+  const normalizedTargetEmail = normalizeEmailForCustomerMatch(email);
 
-  return {
-    id: createdCustomer.id,
-    email: createdCustomer.email ?? user.email,
-    name: createdCustomer.name ?? user.fullName,
-  };
+  for (let pageIndex = 0; pageIndex < CUSTOMER_LIST_MAX_PAGES; pageIndex += 1) {
+    const customerListResponse = await razorpayClient.customers.all({
+      count: CUSTOMER_LIST_PAGE_SIZE,
+      skip: pageIndex * CUSTOMER_LIST_PAGE_SIZE,
+    });
+
+    const matchingCustomer = customerListResponse.items.find(
+      (customer) =>
+        typeof customer.email === "string" &&
+        normalizeEmailForCustomerMatch(customer.email) ===
+          normalizedTargetEmail,
+    );
+
+    if (matchingCustomer) {
+      return mapFetchedCustomerToSummary(
+        matchingCustomer,
+        email,
+        matchingCustomer.name ?? "",
+      );
+    }
+
+    if (customerListResponse.items.length < CUSTOMER_LIST_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return null;
+};
+
+const createRazorpayCustomerOnApi = async (
+  user: GetOrCreateRazorpayCustomerInput["user"],
+): Promise<RazorpayCustomerSummary> => {
+  const razorpayClient = getRazorpayClient();
+
+  try {
+    const createdCustomer = await razorpayClient.customers.create({
+      name: user.fullName,
+      email: user.email,
+      contact: sanitizeContactNumber(user.contact ?? null),
+      fail_existing: RAZORPAY_FAIL_EXISTING_RETURN_EXISTING,
+      notes: { internalUserId: user._id.toString() },
+    });
+
+    return mapFetchedCustomerToSummary(
+      createdCustomer,
+      user.email,
+      user.fullName,
+    );
+  } catch (thrownValue) {
+    if (!isRazorpayDuplicateCustomerError(thrownValue)) {
+      throw mapRazorpayFailureToApiError(
+        thrownValue,
+        "Unable to create Razorpay customer",
+      );
+    }
+
+    console.warn(
+      "[razorpay] customers.create duplicate; falling back to email lookup",
+      { userId: user._id.toString(), email: user.email },
+    );
+
+    const existingCustomer = await findRazorpayCustomerByEmail(user.email);
+    if (!existingCustomer) {
+      throw mapRazorpayFailureToApiError(
+        thrownValue,
+        "Unable to create Razorpay customer",
+      );
+    }
+
+    return existingCustomer;
+  }
+};
+
+export const getOrCreateRazorpayCustomer = async (
+  parameters: GetOrCreateRazorpayCustomerInput,
+): Promise<RazorpayCustomerSummary> => {
+  const { user } = parameters;
+
+  if (isNonEmptyCustomerId(user.razorpayCustomerId)) {
+    try {
+      const existingCustomer = await fetchRazorpayCustomer(
+        user.razorpayCustomerId.trim(),
+      );
+      return existingCustomer;
+    } catch {
+      console.warn(
+        "[razorpay] stored customer id invalid; creating or resolving by email",
+        { userId: user._id.toString(), customerId: user.razorpayCustomerId },
+      );
+    }
+  }
+
+  const customerSummary = await createRazorpayCustomerOnApi(user);
+
+  await persistRazorpayCustomerIdOnUser(user._id, customerSummary.id);
+
+  return customerSummary;
 };
 
 export type CreateProSubscriptionInput = {

@@ -34,3 +34,25 @@ export const getPreviousUtcDateString = (): string => {
   previousUtcDate.setUTCDate(previousUtcDate.getUTCDate() - 1);
   return formatDateAsUtcIsoDate(previousUtcDate);
 };
+
+export const buildUtcDateSequence = (
+  fromDate: string,
+  toDate: string,
+): string[] => {
+  if (!isValidIsoDate(fromDate) || !isValidIsoDate(toDate)) {
+    throw new Error(
+      "dateBounds.utils: fromDate and toDate must be valid YYYY-MM-DD strings",
+    );
+  }
+
+  const sequence: string[] = [];
+  const cursor = new Date(`${fromDate}T00:00:00.000Z`);
+  const end = new Date(`${toDate}T00:00:00.000Z`);
+
+  while (cursor <= end) {
+    sequence.push(formatDateAsUtcIsoDate(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return sequence;
+};

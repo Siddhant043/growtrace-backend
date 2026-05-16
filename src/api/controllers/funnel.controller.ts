@@ -3,10 +3,13 @@ import type { Request, Response } from "express";
 import type { AuthenticatedRequest } from "../middlewares/authenticate.js";
 import type { LinkPlatform } from "../models/link.model.js";
 import {
+  getAccountFunnelDailySeriesForRange,
+  getAccountFunnelOverviewForRange,
   getCampaignFunnelForRange,
   getLinkFunnelForRange,
   getPlatformFunnelForRange,
   listLinkFunnelsForRange,
+  listPlatformFunnelsForRange,
 } from "../../services/funnel.service.js";
 
 const getAuthenticatedRequest = (request: Request): AuthenticatedRequest =>
@@ -83,13 +86,12 @@ export const getCampaignFunnel = async (
   });
 };
 
-export const listLinkFunnels = async (
+const buildFunnelRangeFiltersFromQuery = (
   request: Request,
-  response: Response,
-): Promise<void> => {
-  const authenticatedRequest = getAuthenticatedRequest(request);
-  const dateRange = buildDateRangeFromQuery(request);
-
+): {
+  platform?: LinkPlatform;
+  campaign?: string;
+} => {
   const platformFilter =
     typeof request.query.platform === "string"
       ? (request.query.platform as LinkPlatform)
@@ -99,12 +101,99 @@ export const listLinkFunnels = async (
       ? request.query.campaign
       : undefined;
 
+  return {
+    platform: platformFilter,
+    campaign: campaignFilter,
+  };
+};
+
+export const getFunnelOverview = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = getAuthenticatedRequest(request);
+  const dateRange = buildDateRangeFromQuery(request);
+  const rangeFilters = buildFunnelRangeFiltersFromQuery(request);
+
+  const funnelOverview = await getAccountFunnelOverviewForRange(
+    authenticatedRequest.authenticatedUser.id,
+    dateRange,
+    rangeFilters,
+  );
+
+  response.status(200).json({
+    success: true,
+    data: funnelOverview,
+  });
+};
+
+export const getFunnelDailySeries = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = getAuthenticatedRequest(request);
+  const dateRange = buildDateRangeFromQuery(request);
+  const rangeFilters = buildFunnelRangeFiltersFromQuery(request);
+
+  const funnelDailySeries = await getAccountFunnelDailySeriesForRange(
+    authenticatedRequest.authenticatedUser.id,
+    dateRange,
+    rangeFilters,
+  );
+
+  response.status(200).json({
+    success: true,
+    data: funnelDailySeries,
+  });
+};
+
+export const listPlatformFunnels = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = getAuthenticatedRequest(request);
+  const dateRange = buildDateRangeFromQuery(request);
+  const rangeFilters = buildFunnelRangeFiltersFromQuery(request);
+
+  const platformFunnelList = await listPlatformFunnelsForRange(
+    authenticatedRequest.authenticatedUser.id,
+    dateRange,
+    { campaign: rangeFilters.campaign },
+  );
+
+  response.status(200).json({
+    success: true,
+    data: platformFunnelList,
+  });
+};
+
+export const listLinkFunnels = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = getAuthenticatedRequest(request);
+  const dateRange = buildDateRangeFromQuery(request);
+  const rangeFilters = buildFunnelRangeFiltersFromQuery(request);
+
+  const searchFilter =
+    typeof request.query.search === "string" ? request.query.search : undefined;
+  const pageFilter =
+    typeof request.query.page === "string"
+      ? Number.parseInt(request.query.page, 10)
+      : undefined;
+  const pageSizeFilter =
+    typeof request.query.pageSize === "string"
+      ? Number.parseInt(request.query.pageSize, 10)
+      : undefined;
+
   const linkFunnelList = await listLinkFunnelsForRange(
     authenticatedRequest.authenticatedUser.id,
     dateRange,
     {
-      platform: platformFilter,
-      campaign: campaignFilter,
+      ...rangeFilters,
+      search: searchFilter,
+      page: pageFilter,
+      pageSize: pageSizeFilter,
     },
   );
 

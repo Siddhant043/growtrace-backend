@@ -4,6 +4,7 @@ import { LinkFunnelDailyModel } from "../api/models/linkFunnelDaily.model.js";
 import { PlatformFunnelDailyModel } from "../api/models/platformFunnelDaily.model.js";
 import { CampaignFunnelDailyModel } from "../api/models/campaignFunnelDaily.model.js";
 import { LinkModel, type LinkPlatform } from "../api/models/link.model.js";
+import { buildUtcDateSequence } from "../utils/dateBounds.utils.js";
 import {
   resolveDateRange,
   type DateRangeInput,
@@ -32,12 +33,56 @@ export type LinkFunnelListItem = FunnelStageCounts & {
   campaign: string | null;
 };
 
+export type FunnelRangeFilters = {
+  platform?: LinkPlatform;
+  campaign?: string;
+};
+
 export type LinkFunnelListResponse = ResolvedDateRange & {
   filters: {
     platform: string | null;
     campaign: string | null;
+    search: string | null;
   };
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
   items: LinkFunnelListItem[];
+};
+
+export type FunnelOverviewResponse = ResolvedDateRange &
+  FunnelStageCounts & {
+    filters: {
+      platform: string | null;
+      campaign: string | null;
+    };
+  };
+
+export type FunnelDailySeriesPoint = {
+  date: string;
+  clicks: number;
+  visits: number;
+  engaged: number;
+};
+
+export type FunnelDailySeriesResponse = ResolvedDateRange & {
+  filters: {
+    platform: string | null;
+    campaign: string | null;
+  };
+  points: FunnelDailySeriesPoint[];
+};
+
+export type PlatformFunnelListItem = FunnelStageCounts & {
+  platform: LinkPlatform;
+};
+
+export type PlatformFunnelListResponse = ResolvedDateRange & {
+  filters: {
+    campaign: string | null;
+  };
+  items: PlatformFunnelListItem[];
 };
 
 const buildEmptyFunnelStageCounts = (): FunnelStageCounts => ({
@@ -180,19 +225,22 @@ type AggregatedLinkFunnelRangeRollupRow = AggregatedFunnelRangeRollupRow & {
   campaign: string | null;
 };
 
-export type ListLinkFunnelsRangeFilters = {
-  platform?: LinkPlatform;
-  campaign?: string;
+export type ListLinkFunnelsRangeFilters = FunnelRangeFilters & {
+  search?: string;
+  page?: number;
+  pageSize?: number;
 };
 
-export const listLinkFunnelsForRange = async (
-  userId: string,
-  rangeInput: DateRangeInput,
-  filterOptions: ListLinkFunnelsRangeFilters = {},
-): Promise<LinkFunnelListResponse> => {
-  const { fromDate, toDate } = resolveDateRange(rangeInput);
+type LinkFunnelDailyMatchStage = Record<string, unknown>;
 
-  const matchStage: Record<string, unknown> = {
+const buildLinkFunnelDailyMatchStage = (
+  userId: string,
+  fromDate: string,
+  toDate: string,
+  filterOptions: FunnelRangeFilters = {},
+  linkIds?: Types.ObjectId[],
+): LinkFunnelDailyMatchStage => {
+  const matchStage: LinkFunnelDailyMatchStage = {
     userId: new Types.ObjectId(userId),
     date: { $gte: fromDate, $lte: toDate },
   };
@@ -203,9 +251,252 @@ export const listLinkFunnelsForRange = async (
   if (filterOptions.campaign) {
     matchStage.campaign = filterOptions.campaign;
   }
+  if (linkIds) {
+    matchStage.linkId = { $in: linkIds };
+  }
 
-  const aggregatedLinkRollups =
-    await LinkFunnelDailyModel.aggregate<AggregatedLinkFunnelRangeRollupRow>([
+  return matchStage;
+};
+
+const resolveSearchMatchingLinkIds = async (
+  userId: string,
+  searchTerm: string | undefined,
+): Promise<Types.ObjectId[] | undefined> => {
+  const trimmedSearchTerm = searchTerm?.trim();
+  if (!trimmedSearchTerm) {
+    return undefined;
+  }
+
+  const escapedSearchTerm = trimmedSearchTerm.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
+  const searchPattern = new RegExp(escapedSearchTerm, "i");
+
+  const matchingLinks = await LinkModel.find(
+    {
+      userId: new Types.ObjectId(userId),
+      $or: [{ shortCode: searchPattern }, { originalUrl: searchPattern }],
+    },
+    { _id: 1 },
+  ).lean();
+
+  return matchingLinks.map((linkDocument) => linkDocument._id);
+};
+
+const buildEmptyLinkFunnelListResponse = (
+  fromDate: string,
+  toDate: string,
+  filterOptions: ListLinkFunnelsRangeFilters,
+  page: number,
+  pageSize: number,
+): LinkFunnelListResponse => ({
+  fromDate,
+  toDate,
+  filters: {
+    platform: filterOptions.platform ?? null,
+    campaign: filterOptions.campaign ?? null,
+    search: filterOptions.search?.trim() || null,
+  },
+  page,
+  pageSize,
+  totalItems: 0,
+  totalPages: 1,
+  items: [],
+});
+
+export const getAccountFunnelOverviewForRange = async (
+  userId: string,
+  rangeInput: DateRangeInput,
+  filterOptions: FunnelRangeFilters = {},
+): Promise<FunnelOverviewResponse> => {
+  const { fromDate, toDate } = resolveDateRange(rangeInput);
+  const matchStage = buildLinkFunnelDailyMatchStage(
+    userId,
+    fromDate,
+    toDate,
+    filterOptions,
+  );
+
+  const aggregatedRollupRows =
+    await LinkFunnelDailyModel.aggregate<AggregatedFunnelRangeRollupRow>([
+      { $match: matchStage },
+      buildFunnelRangeRollupGroupStage(),
+    ]);
+
+  return {
+    fromDate,
+    toDate,
+    filters: {
+      platform: filterOptions.platform ?? null,
+      campaign: filterOptions.campaign ?? null,
+    },
+    ...computeFunnelStageCountsFromRollup(aggregatedRollupRows[0] ?? null),
+  };
+};
+
+type AggregatedFunnelDailySeriesRow = {
+  _id: string;
+  totalClicks: number;
+  totalVisits: number;
+  totalEngaged: number;
+};
+
+export const getAccountFunnelDailySeriesForRange = async (
+  userId: string,
+  rangeInput: DateRangeInput,
+  filterOptions: FunnelRangeFilters = {},
+): Promise<FunnelDailySeriesResponse> => {
+  const { fromDate, toDate } = resolveDateRange(rangeInput);
+  const matchStage = buildLinkFunnelDailyMatchStage(
+    userId,
+    fromDate,
+    toDate,
+    filterOptions,
+  );
+
+  const aggregatedDailyRows =
+    await LinkFunnelDailyModel.aggregate<AggregatedFunnelDailySeriesRow>([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: "$date",
+          totalClicks: { $sum: "$clicks" },
+          totalVisits: { $sum: "$visits" },
+          totalEngaged: { $sum: "$engaged" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+  const dailyTotalsByDate = new Map(
+    aggregatedDailyRows.map((dailyRow) => [
+      dailyRow._id,
+      {
+        clicks: dailyRow.totalClicks,
+        visits: dailyRow.totalVisits,
+        engaged: dailyRow.totalEngaged,
+      },
+    ]),
+  );
+
+  const points: FunnelDailySeriesPoint[] = buildUtcDateSequence(
+    fromDate,
+    toDate,
+  ).map((date) => {
+    const dailyTotals = dailyTotalsByDate.get(date);
+    return {
+      date,
+      clicks: dailyTotals?.clicks ?? 0,
+      visits: dailyTotals?.visits ?? 0,
+      engaged: dailyTotals?.engaged ?? 0,
+    };
+  });
+
+  return {
+    fromDate,
+    toDate,
+    filters: {
+      platform: filterOptions.platform ?? null,
+      campaign: filterOptions.campaign ?? null,
+    },
+    points,
+  };
+};
+
+type AggregatedPlatformFunnelRangeRollupRow = AggregatedFunnelRangeRollupRow & {
+  _id: LinkPlatform;
+};
+
+export const listPlatformFunnelsForRange = async (
+  userId: string,
+  rangeInput: DateRangeInput,
+  filterOptions: Pick<FunnelRangeFilters, "campaign"> = {},
+): Promise<PlatformFunnelListResponse> => {
+  const { fromDate, toDate } = resolveDateRange(rangeInput);
+
+  const matchStage = buildLinkFunnelDailyMatchStage(
+    userId,
+    fromDate,
+    toDate,
+    filterOptions,
+  );
+
+  const aggregatedPlatformRollups =
+    await LinkFunnelDailyModel.aggregate<AggregatedPlatformFunnelRangeRollupRow>(
+      [
+        { $match: matchStage },
+        {
+          $group: {
+            _id: "$platform",
+            totalClicks: { $sum: "$clicks" },
+            totalVisits: { $sum: "$visits" },
+            totalEngaged: { $sum: "$engaged" },
+          },
+        },
+        { $match: { _id: { $ne: null } } },
+        { $sort: { totalClicks: -1 } },
+      ],
+    );
+
+  const items: PlatformFunnelListItem[] = aggregatedPlatformRollups
+    .filter((rollupRow): rollupRow is AggregatedPlatformFunnelRangeRollupRow =>
+      Boolean(rollupRow._id),
+    )
+    .map((rollupRow) => ({
+      platform: rollupRow._id,
+      ...computeFunnelStageCountsFromRollup(rollupRow),
+    }));
+
+  return {
+    fromDate,
+    toDate,
+    filters: {
+      campaign: filterOptions.campaign ?? null,
+    },
+    items,
+  };
+};
+
+type PaginatedLinkFunnelAggregationResult = {
+  metadata: Array<{ totalItems: number }>;
+  items: AggregatedLinkFunnelRangeRollupRow[];
+};
+
+export const listLinkFunnelsForRange = async (
+  userId: string,
+  rangeInput: DateRangeInput,
+  filterOptions: ListLinkFunnelsRangeFilters = {},
+): Promise<LinkFunnelListResponse> => {
+  const { fromDate, toDate } = resolveDateRange(rangeInput);
+  const page = filterOptions.page ?? 1;
+  const pageSize = filterOptions.pageSize ?? 20;
+
+  const searchMatchingLinkIds = await resolveSearchMatchingLinkIds(
+    userId,
+    filterOptions.search,
+  );
+
+  if (searchMatchingLinkIds && searchMatchingLinkIds.length === 0) {
+    return buildEmptyLinkFunnelListResponse(
+      fromDate,
+      toDate,
+      filterOptions,
+      page,
+      pageSize,
+    );
+  }
+
+  const matchStage = buildLinkFunnelDailyMatchStage(
+    userId,
+    fromDate,
+    toDate,
+    filterOptions,
+    searchMatchingLinkIds,
+  );
+
+  const paginatedAggregationResult =
+    await LinkFunnelDailyModel.aggregate<PaginatedLinkFunnelAggregationResult>([
       { $match: matchStage },
       {
         $group: {
@@ -218,18 +509,29 @@ export const listLinkFunnelsForRange = async (
         },
       },
       { $sort: { totalClicks: -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: "totalItems" }],
+          items: [
+            { $skip: (page - 1) * pageSize },
+            { $limit: pageSize },
+          ],
+        },
+      },
     ]);
 
+  const aggregationPage = paginatedAggregationResult[0];
+  const totalItems = aggregationPage?.metadata[0]?.totalItems ?? 0;
+  const aggregatedLinkRollups = aggregationPage?.items ?? [];
+
   if (aggregatedLinkRollups.length === 0) {
-    return {
+    return buildEmptyLinkFunnelListResponse(
       fromDate,
       toDate,
-      filters: {
-        platform: filterOptions.platform ?? null,
-        campaign: filterOptions.campaign ?? null,
-      },
-      items: [],
-    };
+      filterOptions,
+      page,
+      pageSize,
+    );
   }
 
   const linkObjectIds = aggregatedLinkRollups.map((rollupRow) => rollupRow._id);
@@ -266,7 +568,12 @@ export const listLinkFunnelsForRange = async (
     filters: {
       platform: filterOptions.platform ?? null,
       campaign: filterOptions.campaign ?? null,
+      search: filterOptions.search?.trim() || null,
     },
+    page,
+    pageSize,
+    totalItems,
+    totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
     items,
   };
 };

@@ -4,6 +4,7 @@ import { LinkFunnelDailyModel } from "../api/models/linkFunnelDaily.model.js";
 import { PlatformFunnelDailyModel } from "../api/models/platformFunnelDaily.model.js";
 import { CampaignFunnelDailyModel } from "../api/models/campaignFunnelDaily.model.js";
 import { LinkModel, type LinkPlatform } from "../api/models/link.model.js";
+import { resolveOwnedLinkMongoId } from "./linkResolution.service.js";
 import { buildUtcDateSequence } from "../utils/dateBounds.utils.js";
 import {
   resolveDateRange,
@@ -143,17 +144,18 @@ const buildFunnelRangeRollupGroupStage = () => ({
 
 export const getLinkFunnelForRange = async (
   userId: string,
-  linkId: string,
+  linkIdOrShortCode: string,
   rangeInput: DateRangeInput,
 ): Promise<FunnelRangeResponse> => {
   const { fromDate, toDate } = resolveDateRange(rangeInput);
+  const resolvedLinkId = await resolveOwnedLinkMongoId(userId, linkIdOrShortCode);
 
   const aggregatedRollupRows =
     await LinkFunnelDailyModel.aggregate<AggregatedFunnelRangeRollupRow>([
       {
         $match: {
           userId: new Types.ObjectId(userId),
-          linkId: new Types.ObjectId(linkId),
+          linkId: new Types.ObjectId(resolvedLinkId),
           date: { $gte: fromDate, $lte: toDate },
         },
       },

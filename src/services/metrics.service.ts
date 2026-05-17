@@ -4,6 +4,7 @@ import { LinkMetricsDailyModel } from "../api/models/linkMetricsDaily.model.js";
 import { PlatformMetricsDailyModel } from "../api/models/platformMetricsDaily.model.js";
 import { CampaignMetricsDailyModel } from "../api/models/campaignMetricsDaily.model.js";
 import { LinkModel, type LinkPlatform } from "../api/models/link.model.js";
+import { resolveOwnedLinkMongoId } from "./linkResolution.service.js";
 import {
   resolveDateRange,
   type DateRangeInput,
@@ -40,17 +41,18 @@ export type LinkMetricsListResponse = ResolvedDateRange & {
 
 export const getLinkMetricsForRange = async (
   userId: string,
-  linkId: string,
+  linkIdOrShortCode: string,
   rangeInput: DateRangeInput,
 ): Promise<EngagementMetricsRangeResponse> => {
   const { fromDate, toDate } = resolveDateRange(rangeInput);
+  const resolvedLinkId = await resolveOwnedLinkMongoId(userId, linkIdOrShortCode);
 
   const aggregatedRollupRows =
     await LinkMetricsDailyModel.aggregate<AggregatedRangeRollupRow>([
       {
         $match: {
           userId: new Types.ObjectId(userId),
-          linkId: new Types.ObjectId(linkId),
+          linkId: new Types.ObjectId(resolvedLinkId),
           date: { $gte: fromDate, $lte: toDate },
         },
       },

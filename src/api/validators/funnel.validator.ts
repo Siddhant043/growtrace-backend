@@ -1,17 +1,13 @@
 import { z } from "zod";
 
 import { LINK_PLATFORMS } from "../models/link.model.js";
+import { linkIdOrShortCodeParamSchema } from "./linkParam.validator.js";
 
 const isoDateSchema = z
   .string()
   .trim()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "must be in YYYY-MM-DD format")
   .optional();
-
-const objectIdParamSchema = z
-  .string()
-  .trim()
-  .regex(/^[a-f\d]{24}$/i, "must be a 24-character hex ObjectId");
 
 const linkPlatformSchema = z.enum(LINK_PLATFORMS);
 
@@ -22,7 +18,7 @@ const dateRangeQuerySchema = z.object({
 
 export const linkFunnelRequestSchema = z.object({
   params: z.object({
-    linkId: objectIdParamSchema,
+    linkId: linkIdOrShortCodeParamSchema,
   }),
   query: dateRangeQuerySchema,
 });

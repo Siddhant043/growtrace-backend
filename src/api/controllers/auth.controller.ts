@@ -34,6 +34,7 @@ type AuthUserRecord = {
   isSubscriptionActive?: boolean;
   authType?: AuthType;
   authMethods?: AuthType[];
+  countryCode?: string | null;
   password?: string;
   googleSub?: string;
   emailVerified?: boolean;
@@ -76,6 +77,7 @@ const mapUserForAuthResponse = (user: {
   isSubscriptionActive?: boolean;
   authType?: AuthType;
   authMethods?: AuthType[];
+  countryCode?: string | null;
 }) => {
   const normalizedEmail = normalizeRequiredString(user.email, "unknown@growtrace.local");
   const normalizedFullName = normalizeRequiredString(
@@ -96,6 +98,7 @@ const mapUserForAuthResponse = (user: {
   isSubscriptionActive: user.isSubscriptionActive ?? false,
   authType: user.authType ?? "email",
   authMethods: user.authMethods ?? [user.authType ?? "email"],
+  countryCode: normalizeOptionalString(user.countryCode),
   };
 };
 
@@ -160,6 +163,12 @@ export const signup = async (
       if (!existingUser.fullName?.trim().length) {
         existingUser.fullName = verifiedGoogleIdentity.fullName;
       }
+      if (
+        request.body.countryCode &&
+        !normalizeOptionalString(existingUser.countryCode)
+      ) {
+        existingUser.countryCode = request.body.countryCode;
+      }
 
       await existingUser.save();
       createdOrLinkedUser = existingUser as unknown as AuthUserRecord;
@@ -176,10 +185,11 @@ export const signup = async (
         googleSub: verifiedGoogleIdentity.googleSub,
         emailVerified: verifiedGoogleIdentity.emailVerified,
         imageUrl: verifiedGoogleIdentity.imageUrl,
+        countryCode: request.body.countryCode ?? null,
       })) as unknown as AuthUserRecord;
     }
   } else {
-    const { fullName, email, password } = request.body;
+    const { fullName, email, password, countryCode } = request.body;
     const existingUser = await UserModel.findOne({ email });
 
     if (existingUser) {
@@ -210,6 +220,7 @@ export const signup = async (
         isDeleted: false,
         authType: "email",
         authMethods: ["email"],
+        countryCode,
       })) as unknown as AuthUserRecord;
     }
   }

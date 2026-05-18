@@ -178,6 +178,12 @@ const runtimeEnvironmentSchema = z.object({
   RAZORPAY_PRO_YEARLY_PLAN_ID: z
     .string()
     .min(1, "RAZORPAY_PRO_YEARLY_PLAN_ID is required"),
+  RAZORPAY_PRO_MONTHLY_PLAN_ID_INTL: z
+    .string()
+    .min(1, "RAZORPAY_PRO_MONTHLY_PLAN_ID_INTL is required"),
+  RAZORPAY_PRO_YEARLY_PLAN_ID_INTL: z
+    .string()
+    .min(1, "RAZORPAY_PRO_YEARLY_PLAN_ID_INTL is required"),
   BILLING_GRACE_PERIOD_HOURS: z.coerce
     .number()
     .int()

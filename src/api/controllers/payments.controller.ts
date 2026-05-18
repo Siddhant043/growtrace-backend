@@ -11,6 +11,11 @@ import {
   resolveFirstMonthFreePromoForCheckout,
 } from "../../services/firstMonthFreePromo.service.js";
 import {
+  assertUserHasCountryForCheckout,
+  resolveCurrencyForBillingRegion,
+  resolvePlanIdForTierAndRegion,
+} from "../../services/billingRegion.service.js";
+import {
   ensureRazorpayCustomerForCheckout,
   findReusablePendingSubscription,
 } from "../../services/subscriptionCheckout.service.js";
@@ -61,18 +66,6 @@ const CANCELLABLE_SUBSCRIPTION_STATUSES = [
   ...ACTIVE_SUBSCRIPTION_STATUSES,
   "created",
 ] as const;
-
-const resolvePlanIdForTier = (planTier: SubscriptionPlanTier): string => {
-  if (planTier === "monthly") {
-    return env.RAZORPAY_PRO_MONTHLY_PLAN_ID;
-  }
-  if (planTier === "yearly") {
-    return env.RAZORPAY_PRO_YEARLY_PLAN_ID;
-  }
-  throw createApiError("Unsupported plan tier", 400, {
-    code: "UNSUPPORTED_PLAN_TIER",
-  });
-};
 
 const resolveTotalCountForTier = (planTier: SubscriptionPlanTier): number =>
   PRO_BILLING_TOTAL_COUNT_BY_TIER[planTier];
@@ -153,7 +146,12 @@ export const createSubscriptionForCurrentUser = async (
     );
   }
 
-  const planId = resolvePlanIdForTier(planTier as SubscriptionPlanTier);
+  const { billingRegion } = assertUserHasCountryForCheckout({
+    countryCode: userDocument.countryCode,
+  });
+  const resolvedPlanTier = planTier as SubscriptionPlanTier;
+  const planId = resolvePlanIdForTierAndRegion(resolvedPlanTier, billingRegion);
+  const billingCurrency = resolveCurrencyForBillingRegion(billingRegion);
 
   const reusablePendingSubscription = await findReusablePendingSubscription(
     userDocument._id,
@@ -219,6 +217,8 @@ export const createSubscriptionForCurrentUser = async (
     notes: {
       internalUserId: userDocument._id.toString(),
       planTier,
+      billingRegion,
+      currency: billingCurrency,
       ...(firstMonthFreePromo.applyPromo
         ? { promo: FIRST_MONTH_FREE_PROMO_TYPE }
         : {}),
@@ -235,7 +235,9 @@ export const createSubscriptionForCurrentUser = async (
   await SubscriptionModel.create({
     userId: userDocument._id,
     plan: "pro",
-    billingInterval: planTier,
+    billingInterval: resolvedPlanTier,
+    billingRegion,
+    currency: billingCurrency,
     status: createdSubscription.status,
     razorpaySubscriptionId: createdSubscription.id,
     razorpayPlanId: createdSubscription.planId,

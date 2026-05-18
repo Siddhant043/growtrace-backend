@@ -1,11 +1,14 @@
 import bcrypt from 'bcryptjs'
 import type { Request, Response } from 'express'
 
+import { SubscriptionModel } from '../models/subscription.model.js'
 import { UserModel } from '../models/user.model.js'
+import type { SubscriptionStatus } from '../models/user.model.js'
 import type { AuthenticatedRequest } from '../middlewares/authenticate.js'
 import { getEffectivePlanForUser } from '../../services/planInfo.service.js'
 import type { UpdatePasswordRequestBody } from '../validators/auth.validator.js'
 import type { SubmitMyFeedbackRequestBody } from '../validators/userFeedback.validator.js'
+import type { UpdateUserCountryRequestBody } from '../validators/userCountry.validator.js'
 import { submitUserFeedback } from '../../services/userFeedback.service.js'
 
 const mapUserProfileResponse = (user: {
@@ -19,6 +22,7 @@ const mapUserProfileResponse = (user: {
   subscriptionEndDate?: Date | null
   isLifetimeSubscription?: boolean
   isSubscriptionActive?: boolean
+  countryCode?: string | null
 }) => ({
   id: user._id.toString(),
   fullName: user.fullName,
@@ -30,13 +34,25 @@ const mapUserProfileResponse = (user: {
   subscriptionEndDate: user.subscriptionEndDate ?? null,
   isLifetimeSubscription: user.isLifetimeSubscription ?? false,
   isSubscriptionActive: user.isSubscriptionActive ?? false,
+  countryCode:
+    typeof user.countryCode === 'string' && user.countryCode.trim().length > 0
+      ? user.countryCode.trim().toUpperCase()
+      : null,
 })
 
-type ApiError = Error & { statusCode: number }
+const ACTIVE_SUBSCRIPTION_STATUSES_FOR_COUNTRY_LOCK: ReadonlyArray<SubscriptionStatus> =
+  ['authenticated', 'active', 'pending', 'halted', 'created']
 
-const createApiError = (message: string, statusCode: number): ApiError => {
+type ApiError = Error & { statusCode: number; code?: string }
+
+const createApiError = (
+  message: string,
+  statusCode: number,
+  code?: string,
+): ApiError => {
   const apiError = new Error(message) as ApiError
   apiError.statusCode = statusCode
+  apiError.code = code
   return apiError
 }
 
@@ -120,7 +136,48 @@ export const getCurrentUserPlan = async (
       firstMonthFreeTrialEndsAt:
         planInfo.firstMonthFreeTrialEndsAt?.toISOString() ?? null,
       billingInterval: planInfo.billingInterval,
+      countryCode: planInfo.countryCode,
+      billingRegion: planInfo.billingRegion,
+      currency: planInfo.currency,
+      requiresCountry: planInfo.requiresCountry,
     },
+  })
+}
+
+export const updateCurrentUserCountry = async (
+  request: Request<unknown, unknown, UpdateUserCountryRequestBody>,
+  response: Response,
+): Promise<void> => {
+  const authenticatedRequest = request as AuthenticatedRequest
+  const { countryCode } = request.body
+
+  const user = await UserModel.findById(authenticatedRequest.authenticatedUser.id)
+
+  if (!user || user.isDeleted) {
+    throw createApiError('User not found or deleted', 404)
+  }
+
+  const lockedSubscription = await SubscriptionModel.findOne({
+    userId: user._id,
+    status: { $in: ACTIVE_SUBSCRIPTION_STATUSES_FOR_COUNTRY_LOCK },
+  })
+    .select({ _id: 1 })
+    .lean()
+
+  if (lockedSubscription) {
+    throw createApiError(
+      'Country cannot be changed while a subscription is active or pending',
+      409,
+      'COUNTRY_LOCKED',
+    )
+  }
+
+  user.countryCode = countryCode
+  await user.save()
+
+  response.status(200).json({
+    success: true,
+    user: mapUserProfileResponse(user),
   })
 }
 

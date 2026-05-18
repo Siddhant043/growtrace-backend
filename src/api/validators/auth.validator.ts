@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { countryCodeSchema } from './country.validator.js'
+
 const normalizedEmailSchema = z
   .string()
   .trim()
@@ -22,12 +24,14 @@ const emailSignupBodySchema = z.object({
   fullName: fullNameSchema,
   email: normalizedEmailSchema,
   password: passwordSchema,
+  countryCode: countryCodeSchema,
 })
 
 const googleSignupBodySchema = z.object({
   authType: z.literal('google'),
   idToken: z.string().min(1, 'Google idToken is required'),
   fullName: fullNameSchema.optional(),
+  countryCode: countryCodeSchema.optional(),
 })
 
 const emailLoginBodySchema = z.object({

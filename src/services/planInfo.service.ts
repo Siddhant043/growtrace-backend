@@ -16,6 +16,12 @@ import {
   type PlanFeature,
 } from "./plan/planFeatures.js";
 import { isEligibleForFirstMonthFree } from "./firstMonthFreePromo.service.js";
+import {
+  resolveBillingRegionFromCountryCode,
+  resolveCurrencyForBillingRegion,
+  type BillingCurrency,
+  type BillingRegion,
+} from "./billingRegion.service.js";
 
 export type EffectivePlanInfo = {
   plan: SubscriptionType;
@@ -28,6 +34,10 @@ export type EffectivePlanInfo = {
   firstMonthFreeEligible: boolean;
   firstMonthFreeTrialEndsAt: Date | null;
   billingInterval: SubscriptionBillingInterval | null;
+  countryCode: string | null;
+  billingRegion: BillingRegion | null;
+  currency: BillingCurrency | null;
+  requiresCountry: boolean;
 };
 
 const PRO_ACTIVE_GRACE_STATUSES: ReadonlyArray<SubscriptionStatus> = [
@@ -77,9 +87,19 @@ export const getEffectivePlanForUser = async (
   const userObjectId = new Types.ObjectId(userId);
   const userDocument = await UserModel.findById(userObjectId)
     .select(
-      "subscription subscriptionStatus subscriptionStartDate subscriptionEndDate isLifetimeSubscription razorpaySubscriptionId",
+      "subscription subscriptionStatus subscriptionStartDate subscriptionEndDate isLifetimeSubscription razorpaySubscriptionId countryCode",
     )
     .lean();
+
+  const userCountryCode =
+    typeof userDocument?.countryCode === "string" &&
+    userDocument.countryCode.trim().length > 0
+      ? userDocument.countryCode.trim().toUpperCase()
+      : null;
+  const billingRegion = resolveBillingRegionFromCountryCode(userCountryCode);
+  const currency =
+    billingRegion === null ? null : resolveCurrencyForBillingRegion(billingRegion);
+  const requiresCountry = userCountryCode === null;
 
   if (!userDocument) {
     return {
@@ -93,6 +113,10 @@ export const getEffectivePlanForUser = async (
       firstMonthFreeEligible: false,
       firstMonthFreeTrialEndsAt: null,
       billingInterval: null,
+      countryCode: null,
+      billingRegion: null,
+      currency: null,
+      requiresCountry: true,
     };
   }
 
@@ -109,6 +133,10 @@ export const getEffectivePlanForUser = async (
       firstMonthFreeEligible: false,
       firstMonthFreeTrialEndsAt: null,
       billingInterval: null,
+      countryCode: userCountryCode,
+      billingRegion,
+      currency,
+      requiresCountry,
     };
   }
 
@@ -170,5 +198,9 @@ export const getEffectivePlanForUser = async (
     firstMonthFreeEligible,
     firstMonthFreeTrialEndsAt,
     billingInterval: activeSubscription?.billingInterval ?? null,
+    countryCode: userCountryCode,
+    billingRegion,
+    currency,
+    requiresCountry,
   };
 };

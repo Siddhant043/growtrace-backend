@@ -121,6 +121,15 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    countryCode: {
+      type: String,
+      default: null,
+      trim: true,
+      uppercase: true,
+      minlength: 2,
+      maxlength: 2,
+      index: true,
+    },
     razorpayCustomerId: {
       type: String,
       default: null,

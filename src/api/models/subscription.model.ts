@@ -14,6 +14,17 @@ export type SubscriptionBillingInterval =
 export const SUBSCRIPTION_PROMO_TYPES = ["first_month_free"] as const;
 export type SubscriptionPromoType = (typeof SUBSCRIPTION_PROMO_TYPES)[number];
 
+export const SUBSCRIPTION_BILLING_REGIONS = [
+  "domestic",
+  "international",
+] as const;
+export type SubscriptionBillingRegion =
+  (typeof SUBSCRIPTION_BILLING_REGIONS)[number];
+
+export const SUBSCRIPTION_BILLING_CURRENCIES = ["INR", "USD"] as const;
+export type SubscriptionBillingCurrency =
+  (typeof SUBSCRIPTION_BILLING_CURRENCIES)[number];
+
 const subscriptionSchema = new Schema(
   {
     userId: {
@@ -32,6 +43,18 @@ const subscriptionSchema = new Schema(
       enum: SUBSCRIPTION_BILLING_INTERVALS,
       required: true,
       default: "monthly",
+    },
+    billingRegion: {
+      type: String,
+      enum: SUBSCRIPTION_BILLING_REGIONS,
+      required: true,
+      default: "domestic",
+    },
+    currency: {
+      type: String,
+      enum: SUBSCRIPTION_BILLING_CURRENCIES,
+      required: true,
+      default: "INR",
     },
     status: {
       type: String,

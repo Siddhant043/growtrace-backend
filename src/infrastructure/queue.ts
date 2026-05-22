@@ -116,10 +116,10 @@ export const getBehaviorEventsQueue = (): Queue<BehaviorEventJobPayload> => {
     {
       connection: getBullmqRedisConnection(),
       defaultJobOptions: {
-        attempts: 5,
+        attempts: 3,
         backoff: { type: "exponential", delay: 500 },
-        removeOnComplete: { age: 3600, count: 1000 },
-        removeOnFail: { age: 86400 },
+        removeOnComplete: { age: 300, count: 100 },
+        removeOnFail: { age: 3600, count: 200 },
       },
     },
   );

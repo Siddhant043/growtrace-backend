@@ -17,6 +17,7 @@ import {
   BOUNCE_DURATION_THRESHOLD_SECONDS,
   SESSION_DURATION_CAP_SECONDS,
 } from "../api/constants/engagement.js";
+import { env } from "../config/env.js";
 import { attachWorkerMonitoring } from "../services/systemMonitoring.workerHealth.service.js";
 
 const toObjectIdOrNull = (
@@ -221,7 +222,9 @@ export const processBehaviorEventJob = async (
 };
 
 export const startBehaviorEventsWorker = (): Worker<BehaviorEventJobPayload> => {
-  const worker = createBehaviorEventsWorker(processBehaviorEventJob);
+  const worker = createBehaviorEventsWorker(processBehaviorEventJob, {
+    concurrency: env.BEHAVIOR_EVENTS_WORKER_CONCURRENCY,
+  });
   attachWorkerMonitoring(worker, BEHAVIOR_EVENTS_QUEUE_NAME);
 
   worker.on("failed", (failedJob, failureError) => {

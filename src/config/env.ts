@@ -73,6 +73,12 @@ const runtimeEnvironmentSchema = z.object({
     .min(1)
     .max(50)
     .default(8),
+  BEHAVIOR_EVENTS_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(8),
   ATTRIBUTION_USER_COOKIE_NAME: z.string().min(1).default("gt_uid"),
   ATTRIBUTION_USER_COOKIE_MAX_AGE_DAYS: z.coerce
     .number()
@@ -143,26 +149,32 @@ const runtimeEnvironmentSchema = z.object({
     .min(1)
     .max(60)
     .default(7),
-  INSIGHTS_PUBLISH_CRON: z.string().min(1).default("0 * * * *"),
+  INSIGHTS_PUBLISH_CRON: z.string().min(1).default("0 9,21 * * *"),
+  INSIGHTS_PUBLISH_MAX_PER_UTC_DAY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(10)
+    .default(2),
   INSIGHTS_PUBLISH_MIN_LINK_CLICKS: z.coerce.number().int().min(0).default(0),
   INSIGHTS_PUBLISH_CONTENT_DEDUPE_TTL_MS: z.coerce
     .number()
     .int()
     .min(0)
     .max(86_400_000)
-    .default(0),
+    .default(43_200_000),
   INSIGHTS_PUBLISH_MIN_INTERVAL_MS: z.coerce
     .number()
     .int()
     .min(0)
     .max(86_400_000 * 30)
-    .default(0),
+    .default(43_200_000),
   INSIGHTS_PUBLISH_FORCE_REFRESH_MS: z.coerce
     .number()
     .int()
     .min(0)
     .max(86_400_000 * 365)
-    .default(0),
+    .default(86_400_000),
   ALERTS_FROM_EMAIL: z
     .string()
     .email("ALERTS_FROM_EMAIL must be a valid email address")

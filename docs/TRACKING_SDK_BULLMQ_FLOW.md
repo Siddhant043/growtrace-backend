@@ -132,10 +132,11 @@ Files:
 
 - Queue name: `behaviorEvents`
 - Backoff: exponential (`delay: 500`)
-- Retries: `attempts: 5`
+- Retries: `attempts: 3`
 - Job retention:
-  - completed: age/count limited
-  - failed: retained for diagnostics
+  - completed: `{ age: 300, count: 100 }` (5 min / 100 jobs)
+  - failed: `{ age: 3600, count: 200 }` (1 hour / 200 jobs)
+- Worker concurrency: `BEHAVIOR_EVENTS_WORKER_CONCURRENCY` env (default `8`, max `50`)
 
 ### Worker logic
 
@@ -236,4 +237,10 @@ Bull Board currently has no auth middleware (internal/dev-safe usage recommended
 - Models:
   - `server/src/api/models/behaviorEvent.model.ts`
   - `server/src/api/models/session.model.ts`
+
+---
+
+## 11) AI insights publish (separate queue)
+
+LLM insight generation is gated before RabbitMQ publish. See [INSIGHTS_PUBLISH_POLICY.md](./INSIGHTS_PUBLISH_POLICY.md) for twice-daily cron (09:00 / 21:00 UTC) and per-user daily caps.
 

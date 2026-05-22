@@ -206,7 +206,7 @@ const startServer = async (): Promise<void> => {
 
   const behaviorEventsWorker = startBehaviorEventsWorker();
   console.log(
-    `behaviorEvents worker running (env=${env.ENV}, pid=${process.pid})`,
+    `behaviorEvents worker running (env=${env.ENV}, pid=${process.pid}, concurrency=${env.BEHAVIOR_EVENTS_WORKER_CONCURRENCY})`,
   );
 
   const metricsAggregationWorker = startMetricsAggregationWorker();

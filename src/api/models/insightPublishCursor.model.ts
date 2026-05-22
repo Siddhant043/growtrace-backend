@@ -22,6 +22,18 @@ const insightPublishCursorSchema = new Schema(
       required: true,
       min: 0,
     },
+    publishUtcDayKey: {
+      type: String,
+      required: true,
+      trim: true,
+      default: "",
+    },
+    publishCountForUtcDay: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
   },
   {
     versionKey: false,
